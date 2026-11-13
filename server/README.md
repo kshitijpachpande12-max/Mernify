@@ -10,7 +10,9 @@ npm install
 
 # 2. Copy env and configure
 cp .env.example .env
-# Edit .env with your MongoDB URI and JWT secret
+# Set MONGO_URI in .env:
+# - MongoDB Atlas: mongodb+srv://<username>:<password>@<cluster-url>.mongodb.net/mernify?retryWrites=true&w=majority
+# - Or local MongoDB: mongodb://localhost:27017/mernify
 
 # 3. Seed demo user & project
 npm run seed
