@@ -31,6 +31,8 @@ const telemetryEventSchema = new mongoose.Schema(
 );
 
 telemetryEventSchema.index({ eventId: 1 }, { unique: true });
+telemetryEventSchema.index({ projectId: 1, serviceName: 1, ts: -1 });
+telemetryEventSchema.index({ projectId: 1, ts: -1 });
 
 const TelemetryEvent = mongoose.model('TelemetryEvent', telemetryEventSchema);
 

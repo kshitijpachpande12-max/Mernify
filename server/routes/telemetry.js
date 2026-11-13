@@ -54,11 +54,14 @@ router.get('/', async (req, res) => {
     }
 
     if (!bucket) {
-      // Raw query — return envelopes sorted by ts asc
+      // High-performance index seek: fetch latest events up to limit and reverse
       const rawEvents = await TelemetryEvent.find(filter)
-        .sort({ ts: 1 })
+        .select('eventId projectId serviceName instanceId seq ts type payload')
+        .sort({ ts: -1 })
         .limit(limit)
         .lean();
+
+      rawEvents.reverse();
 
       const points = rawEvents.map((e) => ({
         eventId: e.eventId,

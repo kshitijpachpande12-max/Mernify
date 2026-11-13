@@ -61,6 +61,10 @@ export function useTelemetry({ projectId, token, selectedServices = [], timeRang
       });
     });
 
+    socket.on('connect_error', (err) => {
+      console.warn('[Sentinel Socket] Connection error:', err.message);
+    });
+
     socket.on('metrics:batch', (batch) => {
       if (!Array.isArray(batch)) return;
       eventCounterRef.current += batch.length;
@@ -240,9 +244,9 @@ export function useTelemetry({ projectId, token, selectedServices = [], timeRang
 
   flushBufferRef.current = flushBuffer;
 
-  // Load historical telemetry when timeRange changes or services change
+  // Load instant telemetry on mount and historical backfills on timeRange changes
   useEffect(() => {
-    if (!token || !projectId || timeRange === 'live' || selectedServices.length === 0) {
+    if (!token || !projectId || selectedServices.length === 0) {
       return;
     }
 
@@ -250,9 +254,18 @@ export function useTelemetry({ projectId, token, selectedServices = [], timeRang
     setIsLoadingHistory(true);
 
     const now = Date.now();
-    let durationMs = 15 * 60 * 1000; // 15m
-    if (timeRange === '1h') durationMs = 60 * 60 * 1000;
-    if (timeRange === '6h') durationMs = 6 * 60 * 60 * 1000;
+    let durationMs = 5 * 60 * 1000; // 5m default for live mode instant seed
+    let fetchLimit = 150;
+    if (timeRange === '15min') {
+      durationMs = 15 * 60 * 1000;
+      fetchLimit = 300;
+    } else if (timeRange === '1h') {
+      durationMs = 60 * 60 * 1000;
+      fetchLimit = 500;
+    } else if (timeRange === '6h') {
+      durationMs = 6 * 60 * 60 * 1000;
+      fetchLimit = 1000;
+    }
     const from = now - durationMs;
 
     const fetchHistoryForService = async (service) => {
@@ -260,7 +273,7 @@ export function useTelemetry({ projectId, token, selectedServices = [], timeRang
         const res = await fetch(
           `${API}/api/telemetry?projectId=${encodeURIComponent(projectId)}&service=${encodeURIComponent(
             service
-          )}&from=${from}&to=${now}&limit=1000`,
+          )}&from=${from}&to=${now}&limit=${fetchLimit}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (!res.ok) return null;

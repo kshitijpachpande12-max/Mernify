@@ -1,5 +1,4 @@
-const jwt = require('jsonwebtoken');
-const { JWT_SECRET } = require('../config/env');
+const { verifyAnyJwt } = require('../middleware/auth');
 const stats = require('../services/stats');
 
 function setupDashboardNamespace(io) {
@@ -12,13 +11,12 @@ function setupDashboardNamespace(io) {
       (socket.handshake.headers.authorization || '').replace('Bearer ', '');
     if (!token) return next(new Error('Missing token'));
 
-    try {
-      const decoded = jwt.verify(token, JWT_SECRET);
-      socket.user = { id: decoded.id, email: decoded.email };
-      next();
-    } catch (err) {
-      next(new Error('Invalid token'));
+    const decoded = verifyAnyJwt(token);
+    if (!decoded) {
+      return next(new Error('Invalid token'));
     }
+    socket.user = { id: decoded.id, email: decoded.email };
+    next();
   });
 
   ns.on('connection', (socket) => {

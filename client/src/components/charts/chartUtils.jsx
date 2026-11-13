@@ -19,22 +19,74 @@ export function formatTime(ts) {
   return new Date(ts).toTimeString().split(' ')[0];
 }
 
-export const axisTick = { fill: '#94a3b8', fontSize: 10 };
+export const axisTick = { fill: '#64748b', fontSize: 10, fontFamily: 'monospace' };
+
 export const tooltipStyle = {
-  backgroundColor: '#020617',
-  border: '1px solid rgba(255,255,255,0.08)',
-  borderRadius: '0.6rem',
-  fontSize: '12px',
+  backgroundColor: 'rgba(2, 6, 23, 0.92)',
+  backdropFilter: 'blur(16px)',
+  border: '1px solid rgba(255, 255, 255, 0.12)',
+  borderRadius: '0.85rem',
+  boxShadow: '0 10px 35px -5px rgba(0, 0, 0, 0.7)',
+  fontSize: '11px',
+  fontFamily: 'monospace',
+  padding: '10px 14px',
+  color: '#f8fafc',
 };
 
+// Smooth monotone curves with anti-aliasing
 const lineProps = {
-  type: 'linear',
+  type: 'monotone',
   dot: false,
-  activeDot: false,
+  activeDot: { r: 4, strokeWidth: 2, stroke: '#ffffff' },
   isAnimationActive: false,
 };
 
 export { lineProps };
+
+/**
+ * Reusable SVG Gradients for rich Area/Line fills
+ */
+export function ChartGradients() {
+  return (
+    <defs>
+      {/* Cyan to Transparent */}
+      <linearGradient id="cyanGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#06b6d4" stopOpacity={0.35} />
+        <stop offset="100%" stopColor="#06b6d4" stopOpacity={0.0} />
+      </linearGradient>
+
+      {/* Indigo to Transparent */}
+      <linearGradient id="indigoGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#6366f1" stopOpacity={0.3} />
+        <stop offset="100%" stopColor="#6366f1" stopOpacity={0.0} />
+      </linearGradient>
+
+      {/* Emerald to Transparent */}
+      <linearGradient id="emeraldGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#10b981" stopOpacity={0.3} />
+        <stop offset="100%" stopColor="#10b981" stopOpacity={0.0} />
+      </linearGradient>
+
+      {/* Amber to Transparent */}
+      <linearGradient id="amberGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.3} />
+        <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.0} />
+      </linearGradient>
+
+      {/* Rose to Transparent */}
+      <linearGradient id="roseGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#f43f5e" stopOpacity={0.35} />
+        <stop offset="100%" stopColor="#f43f5e" stopOpacity={0.0} />
+      </linearGradient>
+
+      {/* Violet to Transparent */}
+      <linearGradient id="violetGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#a855f7" stopOpacity={0.3} />
+        <stop offset="100%" stopColor="#a855f7" stopOpacity={0.0} />
+      </linearGradient>
+    </defs>
+  );
+}
 
 export function ChartFrame({ children, empty }) {
   const ref = useRef(null);
@@ -68,7 +120,12 @@ export function ChartFrame({ children, empty }) {
   return (
     <div ref={ref} className="h-64 w-full">
       {empty ? (
-        <div className="flex h-full items-center justify-center text-xs text-slate-500">{empty}</div>
+        <div className="flex h-full items-center justify-center text-xs text-slate-500 font-mono">
+          <span className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+            {empty}
+          </span>
+        </div>
       ) : (
         size.w > 0 && children(size.w, size.h)
       )}

@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { Panel } from './ui/visuals';
 
 export default function ErrorGroups({ errors = [], serviceName = '' }) {
   const [expandedHash, setExpandedHash] = useState(null);
@@ -34,53 +35,69 @@ export default function ErrorGroups({ errors = [], serviceName = '' }) {
   };
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="font-semibold text-white text-sm">
-          Error Clusters — <span className="font-mono text-cyan-400">{serviceName}</span>
-        </h3>
-        <span className="text-xs text-slate-500">{grouped.length} groups</span>
+    <Panel className="p-5 shadow-2xl transition-all duration-300 hover:border-rose-500/30">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-rose-400" />
+            <h3 className="text-sm font-bold text-white tracking-tight">
+              Error Clusters & Exceptions — <span className="font-mono text-cyan-300">{serviceName}</span>
+            </h3>
+          </div>
+          <p className="text-[11px] text-slate-400 mt-0.5">Stack hash deduplication and trace inspection</p>
+        </div>
+        <span
+          className={`text-xs font-mono px-2.5 py-0.5 rounded-full ${
+            grouped.length > 0
+              ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+              : 'bg-slate-800 text-slate-400'
+          }`}
+        >
+          {grouped.length} {grouped.length === 1 ? 'cluster' : 'clusters'}
+        </span>
       </div>
 
       {grouped.length === 0 ? (
-        <div className="text-center py-6 text-slate-500 text-xs">
-          No error traces logged
+        <div className="text-center py-8 text-slate-500 text-xs font-mono">
+          ✓ No error traces or exceptions logged
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {grouped.map((group) => {
             const isExpanded = expandedHash === group.stackHash;
             return (
               <div
                 key={group.stackHash}
-                className="bg-slate-950/60 border border-slate-800 rounded-lg p-3 text-xs"
+                className="bg-slate-950/80 border border-slate-800/80 rounded-xl p-3.5 text-xs transition-all hover:border-rose-500/30"
               >
                 <div
                   onClick={() => toggleExpand(group.stackHash)}
                   className="flex items-start justify-between gap-3 cursor-pointer select-none"
                 >
-                  <div className="min-w-0 flex-1">
-                    <div className="text-rose-400 font-mono font-medium truncate">
-                      {group.message}
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-rose-300 truncate mb-1">
+                      {group.message || 'Unknown Exception'}
                     </div>
-                    <div className="text-slate-500 text-[11px] font-mono mt-0.5 flex gap-3">
-                      <span>route: {group.route || 'n/a'}</span>
-                      <span>hash: {group.stackHash.slice(0, 8)}</span>
-                      <span>last: {new Date(group.lastSeen).toLocaleTimeString()}</span>
+                    <div className="flex items-center gap-2 text-[11px] font-mono text-slate-400">
+                      <span>route: <strong className="text-cyan-300">{group.route || 'global'}</strong></span>
+                      <span>•</span>
+                      <span>hash: <code className="text-slate-300">{group.stackHash.slice(0, 8)}</code></span>
+                      <span>•</span>
+                      <span>seen: {group.lastSeen ? new Date(group.lastSeen).toLocaleTimeString() : 'now'}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded font-mono font-bold">
-                      {group.count}
+                    <span className="bg-rose-500/20 border border-rose-500/30 text-rose-300 font-mono text-xs px-2.5 py-0.5 rounded-full font-bold">
+                      {group.count}x
                     </span>
-                    <span className="text-slate-500">{isExpanded ? '▲' : '▼'}</span>
+                    <span className="text-slate-500 text-xs">{isExpanded ? '▲' : '▼'}</span>
                   </div>
                 </div>
 
-                {isExpanded && (
-                  <div className="mt-3 pt-3 border-t border-slate-800">
-                    <pre className="text-[11px] font-mono text-slate-400 bg-slate-900 p-2.5 rounded overflow-x-auto whitespace-pre-wrap">
-                      {group.stack || group.message || 'No stack trace provided'}
+                {isExpanded && group.stack && (
+                  <div className="mt-3 pt-3 border-t border-slate-800/80">
+                    <pre className="font-mono text-[11px] text-slate-300 bg-black/60 p-3 rounded-lg overflow-x-auto whitespace-pre-wrap leading-relaxed max-h-48 border border-white/5">
+                      {group.stack}
                     </pre>
                   </div>
                 )}
@@ -89,6 +106,6 @@ export default function ErrorGroups({ errors = [], serviceName = '' }) {
           })}
         </div>
       )}
-    </div>
+    </Panel>
   );
 }

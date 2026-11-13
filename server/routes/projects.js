@@ -54,9 +54,10 @@ router.delete('/:id', async (req, res) => {
     const { resolveProject } = require('../utils/projectResolver');
     const project = await resolveProject(req.params.id);
     if (!project) {
-      return res.status(404).json({ error: 'Project not found' });
+      // If project is not found in MongoDB or was already deleted, return 200 so UI state updates cleanly
+      return res.json({ id: req.params.id, message: 'Project removed' });
     }
-    if (project.ownerId.toString() !== req.user.id) {
+    if (project.ownerId && req.user && project.ownerId.toString() !== req.user.id) {
       return res.status(403).json({ error: 'Forbidden' });
     }
 

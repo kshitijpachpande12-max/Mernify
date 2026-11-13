@@ -318,6 +318,62 @@ export default function Dashboard() {
 
               {activeTabService && (
                 <div className="space-y-6">
+                  {/* Rich Metric KPI Stats Row */}
+                  {(() => {
+                    const metrics = activeData?.metrics || [];
+                    const http = activeData?.http || [];
+                    const m = metrics[metrics.length - 1];
+                    const h = http[http.length - 1];
+
+                    return (
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="p-4 rounded-xl bg-slate-900/80 border border-cyan-500/20 backdrop-blur-md shadow-lg shadow-cyan-950/20">
+                          <div className="flex items-center justify-between text-xs text-slate-400 font-mono mb-1">
+                            <span>CPU USAGE</span>
+                            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                          </div>
+                          <div className="text-2xl font-bold text-white font-mono tracking-tight">
+                            {m?.cpuPercent !== undefined ? `${m.cpuPercent.toFixed(1)}%` : '—'}
+                          </div>
+                          <div className="text-[10px] text-cyan-400 font-mono mt-1">Core utilization</div>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-slate-900/80 border border-indigo-500/20 backdrop-blur-md shadow-lg shadow-indigo-950/20">
+                          <div className="flex items-center justify-between text-xs text-slate-400 font-mono mb-1">
+                            <span>MEMORY (RSS)</span>
+                            <span className="w-2 h-2 rounded-full bg-indigo-400" />
+                          </div>
+                          <div className="text-2xl font-bold text-white font-mono tracking-tight">
+                            {m?.memRssMB !== undefined ? `${Math.round(m.memRssMB)} MB` : '—'}
+                          </div>
+                          <div className="text-[10px] text-indigo-400 font-mono mt-1">Resident process set</div>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-slate-900/80 border border-emerald-500/20 backdrop-blur-md shadow-lg shadow-emerald-950/20">
+                          <div className="flex items-center justify-between text-xs text-slate-400 font-mono mb-1">
+                            <span>P99 LATENCY</span>
+                            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                          </div>
+                          <div className="text-2xl font-bold text-white font-mono tracking-tight">
+                            {h?.latencyP99 !== undefined ? `${h.latencyP99.toFixed(1)} ms` : '—'}
+                          </div>
+                          <div className="text-[10px] text-emerald-400 font-mono mt-1">Tail response time</div>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-slate-900/80 border border-sky-500/20 backdrop-blur-md shadow-lg shadow-sky-950/20">
+                          <div className="flex items-center justify-between text-xs text-slate-400 font-mono mb-1">
+                            <span>THROUGHPUT</span>
+                            <span className="w-2 h-2 rounded-full bg-sky-400" />
+                          </div>
+                          <div className="text-2xl font-bold text-white font-mono tracking-tight">
+                            {h?.requests !== undefined ? `${h.requests} req/s` : '—'}
+                          </div>
+                          <div className="text-[10px] text-sky-400 font-mono mt-1">Active request stream</div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   {/* Top Charts Row */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <MetricsChart serviceName={activeTabService} data={activeData?.metrics || []} />
