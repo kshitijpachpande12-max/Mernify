@@ -19,11 +19,18 @@ const TIERS = [100, 500, 1000];
 
 function checkServerAvailable(url) {
   return new Promise((resolve) => {
-    const req = http.get(`${url.replace(/\/$/, '')}/api/services?projectId=proj_demo`, (res) => {
+    const fullUrl = `${url.replace(/\/$/, '')}/api/services?projectId=proj_demo`;
+    console.log('[bench] Probing:', fullUrl);
+    const req = http.get(fullUrl, (res) => {
+      console.log('[bench] Probe status:', res.statusCode);
       resolve(res.statusCode < 500);
     });
-    req.on('error', () => resolve(false));
-    req.setTimeout(1500, () => {
+    req.on('error', (err) => {
+      console.log('[bench] Probe error:', err.message);
+      resolve(false);
+    });
+    req.setTimeout(3000, () => {
+      console.log('[bench] Probe timed out');
       req.destroy();
       resolve(false);
     });

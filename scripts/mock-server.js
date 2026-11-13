@@ -529,7 +529,7 @@ setInterval(() => {
   }
 }, 100);
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`[mock-server] MERNIFY Mock Server running on http://localhost:${PORT}`);
   console.log(`[mock-server] Ingest namespace: ws://localhost:${PORT}/ingest`);
   console.log(`[mock-server] Dashboard namespace: ws://localhost:${PORT}/dashboard`);
