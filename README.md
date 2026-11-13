@@ -16,12 +16,6 @@ Enterprise observability platforms (Datadog, New Relic, Dynatrace) are notorious
 
 ---
 
-## 📸 Dashboard Preview
-
-![Dashboard](docs/screenshot.png)
-
----
-
 ## 🚀 Key Features
 
 - **⚡ Real-Time Runtime Metrics**: Ingests and renders CPU load (`cpuPercent`), RSS memory, V8 heap usage, event loop lag, and process uptime at 60 FPS.
