@@ -48,31 +48,32 @@ router.post('/', validate(projectSchema), async (req, res) => {
   }
 });
 
-// DELETE /:id — remove a project and the telemetry stored under it
+// DELETE /:id — delete project and cascaded telemetry
 router.delete('/:id', async (req, res) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({ error: 'Invalid project id' });
-    }
-
-    const project = await Project.findOne({
-      _id: req.params.id,
-      ownerId: req.user.id,
-    });
+    const { resolveProject } = require('../utils/projectResolver');
+    const project = await resolveProject(req.params.id);
     if (!project) {
       return res.status(404).json({ error: 'Project not found' });
     }
+    if (project.ownerId.toString() !== req.user.id) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
 
     const projectId = project._id;
-    await Promise.all([
-      TelemetryEvent.deleteMany({ projectId }),
-      Alert.deleteMany({ projectId }),
-      ServiceState.deleteMany({ projectId }),
-      Rollup.deleteMany({ projectId }),
-    ]);
-    await Project.deleteOne({ _id: projectId });
+    await Project.findByIdAndDelete(projectId);
 
-    res.json({ id: projectId.toString() });
+    // Cascade cleanup associated telemetry and alert data
+    await Promise.allSettled([
+      TelemetryEvent.deleteMany({ projectId }),
+      ServiceState.deleteMany({ projectId }),
+      Alert.deleteMany({ projectId }),
+      Rollup ? Rollup.deleteMany({ projectId }) : Promise.resolve(),
+      require('../models/Rollup1s').deleteMany({ projectId }),
+      require('../models/Rollup1m').deleteMany({ projectId }),
+    ]);
+
+    res.json({ id: projectId.toString(), message: 'Project deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

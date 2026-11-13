@@ -5,15 +5,17 @@ const AuthContext = createContext(null);
 const API = 'http://localhost:5000';
 
 export function AuthProvider({ children }) {
-  const [token, setToken] = useState(() => localStorage.getItem('mernitor_token') || localStorage.getItem('mernify_token'));
+  const [token, setToken] = useState(() => localStorage.getItem('sentinel_token') || localStorage.getItem('mernitor_token') || localStorage.getItem('mernify_token'));
   const [user, setUser] = useState(() => {
-    const u = localStorage.getItem('mernitor_user') || localStorage.getItem('mernify_user');
+    const u = localStorage.getItem('sentinel_user') || localStorage.getItem('mernitor_user') || localStorage.getItem('mernify_user');
     return u ? JSON.parse(u) : null;
   });
 
   const saveAuth = useCallback((data) => {
     setToken(data.token);
     setUser(data.user);
+    localStorage.setItem('sentinel_token', data.token);
+    localStorage.setItem('sentinel_user', JSON.stringify(data.user));
     localStorage.setItem('mernitor_token', data.token);
     localStorage.setItem('mernitor_user', JSON.stringify(data.user));
     localStorage.setItem('mernify_token', data.token);
@@ -53,6 +55,8 @@ export function AuthProvider({ children }) {
   const logout = useCallback(() => {
     setToken(null);
     setUser(null);
+    localStorage.removeItem('sentinel_token');
+    localStorage.removeItem('sentinel_user');
     localStorage.removeItem('mernitor_token');
     localStorage.removeItem('mernitor_user');
     localStorage.removeItem('mernify_token');

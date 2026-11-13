@@ -1,6 +1,6 @@
-# 🐕 MERNITOR
+# 🛡️ SENTINEL
 
-> **Mernitor (formerly Mernify / Mini Datadog)** — A high-throughput, lightweight real-time telemetry monitoring platform built with the MERN stack and Socket.IO.
+> **Sentinel (formerly Mernitor / Mernify / Mini Datadog)** — A high-throughput, lightweight real-time telemetry and incident intelligence platform built with the MERN stack and Socket.IO.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Stack](https://img.shields.io/badge/Stack-MERN%20%2B%20Socket.IO-brightgreen)](https://socket.io/)
@@ -12,7 +12,7 @@
 
 Enterprise observability platforms (Datadog, New Relic, Dynatrace) are notoriously complex, resource-heavy, and cost-prohibitive for startups, hackathons, and agile teams. Monitoring microservices or node processes shouldn't require complex agent daemon orchestrations or astronomical SaaS bills.
 
-**MERNITOR** is an ultra-lightweight, open-source telemetry monitoring platform. Designed from scratch on the MERN stack with dual-channel Socket.IO architecture, Mernitor ingests runtime metrics, HTTP access analytics, application error traces, and instance heartbeats at sub-millisecond speeds, streaming live updates directly into an interactive, zero-latency dashboard.
+**SENTINEL** is an ultra-lightweight, open-source telemetry monitoring platform. Designed from scratch on the MERN stack with dual-channel Socket.IO architecture, Sentinel ingests runtime metrics, HTTP access analytics, application error traces, and instance heartbeats at sub-millisecond speeds, streaming live updates directly into an interactive, zero-latency dashboard.
 
 ---
 

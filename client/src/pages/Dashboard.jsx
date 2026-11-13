@@ -88,6 +88,7 @@ export default function Dashboard() {
     telemetryData,
     rawTelemetryData,
     alerts,
+    clearAlerts,
     serviceStatuses,
     eventsPerSec,
     renderRate,
@@ -180,9 +181,9 @@ export default function Dashboard() {
             ← Projects
           </button>
           <div className="h-4 w-px bg-slate-800" />
-          <h1 className="font-bold text-white text-base tracking-tight">
-            <GradientText>Mernitor</GradientText>
-            <span className="font-mono text-cyan-300 text-sm"> {projectId}</span>
+          <h1 className="font-bold text-white text-base tracking-tight flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+            <GradientText>Sentinel Telemetry</GradientText> — <span className="font-mono text-cyan-400 text-sm">{projectId}</span>
           </h1>
         </div>
 
@@ -282,7 +283,7 @@ export default function Dashboard() {
           </div>
 
           <div className="flex-1">
-            <AlertsPanel alerts={alerts} />
+            <AlertsPanel alerts={alerts} onClear={clearAlerts} />
           </div>
         </aside>
 

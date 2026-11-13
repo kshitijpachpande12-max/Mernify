@@ -47,4 +47,44 @@ router.get('/', async (req, res) => {
   }
 });
 
+// DELETE /:id — delete single alert
+router.delete('/:id', async (req, res) => {
+  try {
+    const alert = await Alert.findById(req.params.id);
+    if (!alert) {
+      return res.status(404).json({ error: 'Alert not found' });
+    }
+    const project = await Project.findById(alert.projectId);
+    if (project && project.ownerId.toString() !== req.user.id) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    await Alert.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Alert deleted', id: req.params.id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE / — clear all alerts for a project
+router.delete('/', async (req, res) => {
+  try {
+    const { projectId } = req.query;
+    if (!projectId) {
+      return res.status(400).json({ error: 'projectId is required' });
+    }
+    const { resolveProject } = require('../utils/projectResolver');
+    const project = await resolveProject(projectId);
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    if (project.ownerId.toString() !== req.user.id) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    await Alert.deleteMany({ projectId: project._id });
+    res.json({ message: 'All alerts cleared for project', projectId: project._id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

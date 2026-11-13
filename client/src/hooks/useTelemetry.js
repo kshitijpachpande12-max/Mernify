@@ -351,6 +351,18 @@ export function useTelemetry({ projectId, token, selectedServices = [], timeRang
     };
   }, [projectId, token, timeRange, selectedServices]);
 
+  const clearAlerts = useCallback(async () => {
+    setAlerts([]);
+    try {
+      await fetch(`${API}/api/alerts?projectId=${encodeURIComponent(projectId)}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch {
+      // ignore
+    }
+  }, [projectId, token]);
+
   // Compute filtered telemetry data when replaying incident slider is active
   const filteredData = useCallback(() => {
     if (!isReplaying || replayTime === null) {
@@ -374,6 +386,7 @@ export function useTelemetry({ projectId, token, selectedServices = [], timeRang
     telemetryData: isReplaying && replayTime !== null ? filteredData() : telemetryData,
     rawTelemetryData: telemetryData,
     alerts,
+    clearAlerts,
     serviceStatuses,
     eventsPerSec,
     renderRate,

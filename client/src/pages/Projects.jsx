@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { AuroraBackground, GradientText, MagicCard, ShinyButton } from '../components/ui/visuals';
+import LiquidSimulation from '../components/LiquidSimulation';
 
 const API = 'http://localhost:5000';
 
@@ -79,13 +80,14 @@ export default function Projects() {
     if (!pendingDelete) return;
     setDeleting(true);
     setError('');
+    const targetId = pendingDelete.id || pendingDelete._id;
     try {
-      const res = await fetch(`${API}/api/projects/${pendingDelete.id}`, {
+      const res = await fetch(`${API}/api/projects/${encodeURIComponent(targetId)}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
-        setProjects((prev) => prev.filter((p) => String(p.id) !== String(pendingDelete.id)));
+        setProjects((prev) => prev.filter((p) => String(p.id || p._id) !== String(targetId)));
         setPendingDelete(null);
       } else {
         const body = await res.json().catch(() => ({}));
@@ -108,33 +110,55 @@ export default function Projects() {
   }, [pendingDelete, deleting]);
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#05060d]">
+    <div className="relative min-h-screen overflow-hidden bg-[#05060d] text-slate-100">
       <AuroraBackground />
-      <header className="relative z-10 flex items-center justify-between border-b border-white/10 bg-slate-950/50 px-6 py-4 backdrop-blur">
-        <GradientText className="text-xl font-bold">Mernitor</GradientText>
-        <button onClick={logout} className="text-sm text-slate-400 transition-colors hover:text-white">
+      <LiquidSimulation className="opacity-30" />
+
+      {/* Header */}
+      <header className="relative z-10 flex items-center justify-between border-b border-white/10 bg-slate-950/60 px-6 py-4 backdrop-blur-xl">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-500 flex items-center justify-center font-black text-white text-base shadow-[0_0_15px_rgba(6,182,212,0.4)]">
+            S
+          </div>
+          <div className="flex items-center gap-2">
+            <GradientText className="text-xl font-bold">Sentinel</GradientText>
+            <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+              Control Plane
+            </span>
+          </div>
+        </div>
+        <button onClick={logout} className="text-sm text-slate-400 transition-colors hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-900">
           Sign out
         </button>
       </header>
 
+      {/* Main Container */}
       <main className="relative z-10 mx-auto max-w-4xl p-6">
-        <h2 className="mb-6 text-2xl font-semibold text-white">Projects</h2>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-semibold text-white">Monitored Deployments</h2>
+            <p className="text-xs text-slate-400 mt-1">Select a workspace or register a new target application</p>
+          </div>
+          <span className="text-xs font-mono text-cyan-400 bg-slate-900/80 px-3 py-1 rounded-full border border-white/10">
+            {projects.length} {projects.length === 1 ? 'Project' : 'Projects'}
+          </span>
+        </div>
 
         <form onSubmit={handleCreate} className="mb-8 flex gap-3">
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="New project name"
-            className="flex-1 rounded-lg border border-white/10 bg-slate-950/70 px-4 py-2.5 text-white placeholder-slate-500 outline-none ring-cyan-400/40 focus:ring-2"
+            placeholder="e.g. production-ecommerce-api"
+            className="flex-1 rounded-xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white placeholder-slate-500 outline-none ring-cyan-400/40 focus:ring-2 backdrop-blur-md"
           />
-          <ShinyButton type="submit" disabled={creating || !name.trim()}>
-            {creating ? 'Creating…' : 'Create'}
+          <ShinyButton type="submit" disabled={creating || !name.trim()} className="whitespace-nowrap">
+            {creating ? 'Registering…' : '+ New Deployment'}
           </ShinyButton>
         </form>
 
         {error && (
-          <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
             {error}
           </div>
         )}
@@ -149,71 +173,84 @@ export default function Projects() {
         )}
 
         {!loading && projects.length === 0 && (
-          <MagicCard className="px-6 py-12 text-center text-slate-400">
-            <p className="text-lg text-slate-200">No projects yet</p>
-            <p className="mt-1 text-sm">Create your first project above</p>
+          <MagicCard className="px-6 py-12 text-center text-slate-400 rounded-2xl">
+            <p className="text-lg text-slate-200 font-medium">No projects yet</p>
+            <p className="mt-1 text-sm">Create your first project above to begin telemetry ingestion</p>
           </MagicCard>
         )}
 
-        <div className="space-y-3">
-          {projects.map((p) => (
-            <MagicCard key={p.id} className="p-5">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <button
-                  onClick={() => navigate(`/dashboard/${p.id}`)}
-                  className="text-lg font-medium text-cyan-300 transition-colors hover:text-cyan-200"
-                >
-                  {p.name}
-                </button>
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-slate-500">
-                    {new Date(p.createdAt).toLocaleDateString()}
-                  </span>
+        <div className="space-y-3.5">
+          {projects.map((p) => {
+            const pid = p.id || p._id;
+            return (
+              <MagicCard key={pid} className="p-5 rounded-2xl transition-all duration-300">
+                <div className="mb-3 flex items-center justify-between gap-3">
                   <button
-                    type="button"
-                    onClick={() => setPendingDelete(p)}
-                    className="rounded-lg border border-rose-500/30 px-3 py-1.5 text-xs text-rose-300 transition-colors hover:bg-rose-500/10"
+                    onClick={() => navigate(`/dashboard/${pid}`)}
+                    className="text-lg font-medium text-cyan-300 transition-colors hover:text-cyan-200 text-left flex items-center gap-2"
                   >
-                    Delete
+                    <span>{p.name}</span>
+                    <span className="text-xs text-cyan-400 opacity-60 hover:opacity-100">↗</span>
+                  </button>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-slate-500 font-mono">
+                      {p.createdAt ? new Date(p.createdAt).toLocaleDateString() : 'Active'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setPendingDelete(p)}
+                      className="rounded-lg border border-rose-500/30 px-3 py-1.5 text-xs text-rose-300 transition-colors hover:bg-rose-500/10 cursor-pointer flex items-center gap-1"
+                    >
+                      🗑️ Delete
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 overflow-hidden text-ellipsis rounded-lg bg-slate-900/80 px-3 py-2 font-mono text-xs text-slate-400 border border-white/5">
+                    {p.apiKey}
+                  </code>
+                  <button
+                    onClick={() => copyKey(p.apiKey, pid)}
+                    className="rounded-lg bg-slate-800 px-3 py-2 text-xs text-slate-300 transition-colors hover:bg-slate-700 cursor-pointer"
+                  >
+                    {copied === pid ? '✓ Copied' : 'Copy'}
                   </button>
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 overflow-hidden text-ellipsis rounded bg-slate-900/80 px-3 py-2 font-mono text-xs text-slate-400">
-                  {p.apiKey}
-                </code>
-                <button
-                  onClick={() => copyKey(p.apiKey, p.id)}
-                  className="rounded bg-slate-800 px-3 py-2 text-xs text-slate-300 transition-colors hover:bg-slate-700"
-                >
-                  {copied === p.id ? '✓ Copied' : 'Copy'}
-                </button>
-              </div>
-            </MagicCard>
-          ))}
+              </MagicCard>
+            );
+          })}
         </div>
       </main>
 
+      {/* Delete Confirmation Modal */}
       {pendingDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="delete-project-title"
-            className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-950 p-6 shadow-2xl"
+            className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-950 p-6 shadow-2xl space-y-4"
           >
-            <h3 id="delete-project-title" className="text-lg font-semibold text-white">
-              Delete {pendingDelete.name}?
-            </h3>
-            <p className="mt-2 text-sm text-slate-400">
-              This removes the project and its telemetry, alerts, and service history.
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 text-lg font-bold">
+                ⚠️
+              </div>
+              <div>
+                <h3 id="delete-project-title" className="text-lg font-semibold text-white">
+                  Delete {pendingDelete.name}?
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">This action is permanent and cannot be undone.</p>
+              </div>
+            </div>
+            <p className="text-xs text-slate-400 leading-relaxed bg-slate-900/80 p-3 rounded-xl border border-white/5">
+              Permanently cascades and deletes all associated telemetry events, service states, alerts, and rollups for this project.
             </p>
-            <div className="mt-6 flex justify-end gap-3">
+            <div className="flex justify-end gap-3 pt-2">
               <button
                 type="button"
                 disabled={deleting}
                 onClick={() => setPendingDelete(null)}
-                className="rounded-lg px-4 py-2 text-sm text-slate-300 hover:text-white"
+                className="rounded-xl px-4 py-2 text-xs text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 transition-colors"
               >
                 Cancel
               </button>
@@ -221,9 +258,9 @@ export default function Projects() {
                 type="button"
                 disabled={deleting}
                 onClick={confirmDelete}
-                className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-500 disabled:cursor-not-allowed disabled:bg-rose-900"
+                className="rounded-xl bg-rose-600 px-4 py-2 text-xs font-semibold text-white hover:bg-rose-500 disabled:cursor-not-allowed disabled:bg-rose-900 transition-colors cursor-pointer shadow-lg shadow-rose-600/30"
               >
-                {deleting ? 'Deleting…' : 'Delete project'}
+                {deleting ? 'Deleting…' : 'Delete Project'}
               </button>
             </div>
           </div>

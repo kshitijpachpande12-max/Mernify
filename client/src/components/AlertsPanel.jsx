@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function AlertsPanel({ alerts = [] }) {
+export default function AlertsPanel({ alerts = [], onClear }) {
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm flex flex-col h-full">
       <div className="flex items-center justify-between mb-3">
@@ -12,6 +12,16 @@ export default function AlertsPanel({ alerts = [] }) {
             </span>
           )}
         </h3>
+
+        {alerts.length > 0 && onClear && (
+          <button
+            onClick={onClear}
+            className="text-[11px] font-mono text-slate-400 hover:text-rose-400 transition-colors px-2 py-0.5 rounded bg-slate-800/80 hover:bg-rose-500/10 border border-slate-700/60"
+            title="Clear all alerts"
+          >
+            Clear All
+          </button>
+        )}
       </div>
 
       <div className="overflow-y-auto space-y-2 flex-1 max-h-80 pr-1">

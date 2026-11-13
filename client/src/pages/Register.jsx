@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { AuroraBackground, GradientText, MagicCard, ShinyButton } from '../components/ui/visuals';
+import LiquidSimulation from '../components/LiquidSimulation';
+import CanvasCrowd from '../components/CanvasCrowd';
+import KineticTitle from '../components/KineticTitle';
 
 export default function Register() {
   const { register } = useAuth();
@@ -20,70 +22,116 @@ export default function Register() {
       await register(name, email, password);
       navigate('/projects');
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Registration failed');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#05060d] px-4">
-      <AuroraBackground />
-      <MagicCard className="w-full max-w-md p-8">
-        <GradientText className="block text-center text-3xl font-bold">Mernitor</GradientText>
-        <p className="mb-8 mt-2 text-center text-slate-400">Create your account</p>
+    <div className="relative min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4 sm:p-6 lg:p-12 overflow-x-hidden selection:bg-cyan-500/30 selection:text-cyan-200">
+      {/* Vercel Liquid Simulation Layer */}
+      <LiquidSimulation className="opacity-90" />
 
-        {error && (
-          <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-            {error}
-          </div>
-        )}
+      {/* Canvas Crowd Particle Layer */}
+      <CanvasCrowd nodeCount={50} className="opacity-60" />
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-300">Name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              className="w-full rounded-lg border border-white/10 bg-slate-900/80 px-4 py-2.5 text-white placeholder-slate-500 outline-none ring-cyan-400/40 focus:ring-2"
-              placeholder="Your name"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-300">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full rounded-lg border border-white/10 bg-slate-900/80 px-4 py-2.5 text-white placeholder-slate-500 outline-none ring-cyan-400/40 focus:ring-2"
-              placeholder="you@example.com"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-300">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              className="w-full rounded-lg border border-white/10 bg-slate-900/80 px-4 py-2.5 text-white placeholder-slate-500 outline-none ring-cyan-400/40 focus:ring-2"
-              placeholder="••••••••"
-            />
-          </div>
-          <ShinyButton type="submit" disabled={loading} className="w-full">
-            {loading ? 'Creating account…' : 'Create Account'}
-          </ShinyButton>
-        </form>
+      {/* Grid Pattern */}
+      <div className="pointer-events-none absolute inset-0 bg-grid-pattern opacity-15" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-slate-950/40 via-transparent to-slate-950/80" />
 
-        <p className="mt-6 text-center text-sm text-slate-400">
-          Already have an account?{' '}
-          <Link to="/login" className="text-cyan-300 hover:text-cyan-200">Sign in</Link>
-        </p>
-      </MagicCard>
+      {/* Card Container */}
+      <div className="relative z-10 w-full max-w-md">
+        <div className="text-center mb-6">
+          <KineticTitle subtitle="DEPLOY TELEMETRY CONTROL PLANE" />
+        </div>
+
+        <div className="relative rounded-3xl bg-slate-900/80 border border-white/10 p-7 sm:p-9 backdrop-blur-2xl shadow-[0_0_60px_rgba(0,0,0,0.8)] transition-all hover:border-cyan-500/40">
+          <div className="mb-6 text-center">
+            <h2 className="text-2xl font-bold text-white tracking-tight">Create Organization</h2>
+            <p className="text-xs text-slate-400 mt-1">Initialize your distributed telemetry workspace</p>
+          </div>
+
+          {error && (
+            <div className="bg-rose-500/10 border border-rose-500/30 text-rose-300 px-4 py-3 rounded-xl mb-5 text-xs flex items-center gap-2">
+              <span className="text-base">⚠️</span>
+              <span>{error}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-mono uppercase tracking-wider text-slate-300 mb-1.5">
+                Full Name / Organization
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                placeholder="Cloud Operations Team"
+                className="w-full px-4 py-3 bg-slate-950/80 border border-slate-700/80 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-mono uppercase tracking-wider text-slate-300 mb-1.5">
+                Work Email
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                placeholder="ops@company.io"
+                className="w-full px-4 py-3 bg-slate-950/80 border border-slate-700/80 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-mono uppercase tracking-wider text-slate-300 mb-1.5">
+                Password
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                placeholder="••••••••••••"
+                className="w-full px-4 py-3 bg-slate-950/80 border border-slate-700/80 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3.5 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 disabled:opacity-50 text-white font-semibold text-sm rounded-xl shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 transition-all duration-300 transform active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer mt-2"
+            >
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Initializing…
+                </span>
+              ) : (
+                <span>Register & Launch Workspace →</span>
+              )}
+            </button>
+          </form>
+
+          <div className="mt-6 pt-5 border-t border-slate-800 text-center">
+            <p className="text-xs text-slate-400">
+              Already have an account?{' '}
+              <Link to="/login" className="text-cyan-400 hover:text-cyan-300 font-medium ml-1">
+                Sign in
+              </Link>
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
