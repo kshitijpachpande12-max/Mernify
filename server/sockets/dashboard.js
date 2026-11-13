@@ -36,11 +36,17 @@ function setupDashboardNamespace(io) {
 
         // Join project-level room
         socket.join(`project:${projectId}`);
+        if (projectId === 'proj_demo') {
+          socket.join('project:proj_demo');
+        }
 
         // If specific services are given, join each service room
         if (Array.isArray(services) && services.length > 0) {
           for (const svc of services) {
             socket.join(`project:${projectId}:service:${svc}`);
+            if (projectId === 'proj_demo') {
+              socket.join(`project:proj_demo:service:${svc}`);
+            }
           }
         }
       }
@@ -57,9 +63,15 @@ function setupDashboardNamespace(io) {
         if (!projectId) return;
 
         socket.leave(`project:${projectId}`);
+        if (projectId === 'proj_demo') {
+          socket.leave('project:proj_demo');
+        }
         if (Array.isArray(services) && services.length > 0) {
           for (const svc of services) {
             socket.leave(`project:${projectId}:service:${svc}`);
+            if (projectId === 'proj_demo') {
+              socket.leave(`project:proj_demo:service:${svc}`);
+            }
           }
         }
       }

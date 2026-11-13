@@ -26,9 +26,12 @@ router.get('/', async (req, res) => {
       return res.status(400).json({ error: 'projectId is required' });
     }
 
-    // Verify ownership
-    const project = await Project.findById(projectId);
-    if (!project || project.ownerId.toString() !== req.user.id) {
+    const { resolveProject } = require('../utils/projectResolver');
+    const project = await resolveProject(projectId);
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    if (project.ownerId.toString() !== req.user.id) {
       return res.status(403).json({ error: 'Forbidden' });
     }
 

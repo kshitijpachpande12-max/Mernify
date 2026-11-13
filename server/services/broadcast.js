@@ -33,10 +33,12 @@ function flush(dashboardIo) {
   for (const [key, events] of roomBuffers.entries()) {
     if (events.length === 0) continue;
     const [projectId, serviceName] = key.split(':::');
-    // Broadcast to both service-specific room and project-wide room
+    // Broadcast to service room, project room, and alias rooms
     dashboardIo
       .to(`project:${projectId}:service:${serviceName}`)
       .to(`project:${projectId}`)
+      .to(`project:proj_demo:service:${serviceName}`)
+      .to('project:proj_demo')
       .emit('metrics:batch', events);
   }
   roomBuffers.clear();
@@ -60,6 +62,8 @@ function emitAlert(dashboardIo, alert) {
   dashboardIo
     .to(`project:${alert.projectId}:service:${alert.serviceName}`)
     .to(`project:${alert.projectId}`)
+    .to(`project:proj_demo:service:${alert.serviceName}`)
+    .to('project:proj_demo')
     .emit('alert:new', alertObj);
 }
 
@@ -74,6 +78,8 @@ function emitServiceStatus(dashboardIo, status) {
   dashboardIo
     .to(`project:${status.projectId}:service:${status.serviceName}`)
     .to(`project:${status.projectId}`)
+    .to(`project:proj_demo:service:${status.serviceName}`)
+    .to('project:proj_demo')
     .emit('service:status', statusObj);
 }
 

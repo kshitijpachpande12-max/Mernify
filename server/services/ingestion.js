@@ -3,7 +3,7 @@ const { envelopeSchema } = require('../validation/schemas');
 const stats = require('./stats');
 
 // ── Rate limiter (per-project token bucket) ──────────────────
-const TOKENS_PER_MIN = 10000;
+const TOKENS_PER_MIN = parseInt(process.env.RATE_LIMIT_TOKENS_PER_MIN, 10) || 120000;
 const REFILL_RATE = TOKENS_PER_MIN / 60000; // tokens per ms
 
 const buckets = new Map(); // projectId -> { tokens, lastRefill }
