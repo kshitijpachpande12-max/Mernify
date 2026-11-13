@@ -124,8 +124,8 @@ async function processEvents(events) {
       }
     }
 
-    // Update heartbeat state
-    if (ev.type === 'heartbeat') {
+    // Update heartbeat & active service state
+    if (ev.type === 'heartbeat' || ev.type === 'metrics' || ev.type === 'http') {
       const prev = await ServiceState.findOneAndUpdate(
         { projectId, serviceName, instanceId: ev.instanceId },
         { lastHeartbeat: new Date(), status: 'up' },

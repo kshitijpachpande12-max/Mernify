@@ -114,6 +114,37 @@ export default function Dashboard() {
     }, [isReplaying, replaySliderValue, rawTelemetryData, selectedServices]),
   });
 
+  // Auto-discover services from live incoming telemetry if services list was empty
+  useEffect(() => {
+    const liveKeys = Object.keys(telemetryData);
+    if (liveKeys.length > 0) {
+      setServices((prev) => {
+        const existing = prev.map((s) => (typeof s === 'string' ? s : s.serviceName));
+        const newOnes = liveKeys.filter((k) => !existing.includes(k));
+        if (newOnes.length > 0) {
+          return [
+            ...prev,
+            ...newOnes.map((name) => ({
+              serviceName: name,
+              instances: [{ instanceId: 'inst-1', status: 'up', lastSeen: Date.now() }],
+            })),
+          ];
+        }
+        return prev;
+      });
+
+      setSelectedServices((prev) => {
+        if (prev.length === 0) return liveKeys;
+        return prev;
+      });
+
+      setActiveTabService((prev) => {
+        if (!prev) return liveKeys[0];
+        return prev;
+      });
+    }
+  }, [telemetryData]);
+
   const activeData = activeTabService ? telemetryData[activeTabService] : null;
 
   return (

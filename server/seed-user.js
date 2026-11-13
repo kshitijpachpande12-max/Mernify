@@ -31,6 +31,18 @@ async function seed() {
     console.log(`[seed] Project already exists with apiKey: dev-key`);
   }
 
+  // Upsert demo services in ServiceState so dashboard immediately discovers them
+  const ServiceState = require('./models/ServiceState');
+  const demoServices = ['cart-service', 'payment-service', 'auth-service'];
+  for (const svc of demoServices) {
+    await ServiceState.findOneAndUpdate(
+      { projectId: project._id, serviceName: svc, instanceId: `${svc}-inst-1` },
+      { lastHeartbeat: new Date(), status: 'up' },
+      { upsert: true }
+    );
+  }
+  console.log('[seed] Registered demo services: cart-service, payment-service, auth-service');
+
   console.log('\n--- Seed Complete ---');
   console.log(`Email:    ${email}`);
   console.log(`Password: ${password}`);

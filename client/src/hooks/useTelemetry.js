@@ -54,9 +54,10 @@ export function useTelemetry({ projectId, token, selectedServices = [], timeRang
     socketRef.current = socket;
 
     socket.on('connect', () => {
-      if (selectedServices.length > 0) {
-        socket.emit('subscribe', { projectId, services: selectedServices });
-      }
+      socket.emit('subscribe', {
+        projectId,
+        services: selectedServices && selectedServices.length > 0 ? selectedServices : undefined,
+      });
     });
 
     socket.on('metrics:batch', (batch) => {
