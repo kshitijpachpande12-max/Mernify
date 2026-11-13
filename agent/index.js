@@ -88,121 +88,98 @@ function sendHeartbeat() {
 
 // ── Public API ─────────────────────────────────────────────────────────────
 
-const agent = {
-  /**
-   * Initialise the agent. Call once at application startup.
-   *
-   * @param {object} opts
-   * @param {string} opts.apiKey        – project API key (required)
-   * @param {string} [opts.serverUrl]   – Mernify server URL (default http://localhost:5000)
-   * @param {string} opts.serviceName   – logical service name (required)
-   * @param {string} [opts.instanceId]  – unique instance identifier (auto-generated if omitted)
-   * @returns {object} the agent (for chaining)
-   */
-  init(opts) {
-    try {
-      if (initialized) {
-        console.warn('[mernify-agent] already initialized — ignoring duplicate init()');
-        return agent;
-      }
+function agent(opts) {
+  if (opts) return agent.init(opts);
+  return agent;
+}
 
-      if (!opts || !opts.apiKey || !opts.serviceName) {
-        throw new Error('mernify-agent: apiKey and serviceName are required');
-      }
-
-      config = {
-        apiKey: opts.apiKey,
-        serverUrl: opts.serverUrl || 'http://localhost:5000',
-        serviceName: opts.serviceName,
-        instanceId: opts.instanceId || ulid(),
-        projectId: opts.apiKey, // server will override with real project._id
-      };
-
-      seq = 0;
-      buffer = createBuffer(10000);
-      transport = createTransport();
-
-      // Connect to server
-      transport.connect(config.serverUrl, config.apiKey);
-
-      // Set up error tracking
-      errorTracker = setupErrorTracking({
-        addToBuffer,
-        createEnvelope,
-      });
-
-      // Start recurring collection timers
-      metricsTimer = setInterval(() => { collectMetrics(); }, 2000);
-      heartbeatTimer = setInterval(() => { sendHeartbeat(); }, 5000);
-      flushTimer = setInterval(() => { flushBuffer(); }, 1000);
-
-      // Unref all timers so they don't keep the process alive
-      if (metricsTimer.unref) metricsTimer.unref();
-      if (heartbeatTimer.unref) heartbeatTimer.unref();
-      if (flushTimer.unref) flushTimer.unref();
-
-      initialized = true;
-    } catch (err) {
-      console.error('[mernify-agent] init failed:', err.message);
+agent.init = function(opts) {
+  try {
+    if (initialized) {
+      console.warn('[mernify-agent] already initialized — ignoring duplicate init()');
+      return agent;
     }
 
-    return agent;
-  },
-
-  /**
-   * Returns Express middleware that aggregates HTTP metrics into 1-second windows.
-   */
-  middleware() {
-    if (!initialized) {
-      console.warn('[mernify-agent] middleware() called before init() — returning no-op');
-      return function noopMiddleware(req, res, next) { next(); };
+    if (!opts || !opts.apiKey || !opts.serviceName) {
+      throw new Error('mernify-agent: apiKey and serviceName are required');
     }
 
-    if (!_middleware) {
-      _middleware = createMiddleware({ addToBuffer, createEnvelope });
-    }
+    config = {
+      apiKey: opts.apiKey,
+      serverUrl: opts.serverUrl || 'http://localhost:5000',
+      serviceName: opts.serviceName,
+      instanceId: opts.instanceId || ulid(),
+      projectId: opts.apiKey, // server will override with real project._id
+    };
 
-    return _middleware;
-  },
+    seq = 0;
+    buffer = createBuffer(10000);
+    transport = createTransport();
 
-  /**
-   * Track a custom metric.
-   *
-   * @param {string} name  – metric name
-   * @param {*}      value – metric value
-   */
-  track(name, value) {
-    try {
-      if (!initialized) return;
-      addToBuffer(createEnvelope('custom', { name, value }));
-    } catch (_) {
-      /* never crash host */
-    }
-  },
+    // Connect to server
+    transport.connect(config.serverUrl, config.apiKey);
 
-  /**
-   * Emit a log envelope.
-   *
-   * @param {'info'|'warn'|'error'} level
-   * @param {string} msg
-   */
-  log(level, msg) {
-    try {
-      if (!initialized) return;
-      const allowed = ['info', 'warn', 'error'];
-      if (!allowed.includes(level)) {
-        console.warn('[mernify-agent] invalid log level "' + level + '", defaulting to "info"');
-        level = 'info';
-      }
-      addToBuffer(createEnvelope('log', { level, message: msg }));
-    } catch (_) {
-      /* never crash host */
-    }
-  },
+    // Set up error tracking
+    errorTracker = setupErrorTracking({
+      addToBuffer,
+      createEnvelope,
+    });
 
-  // Expose internals for lib modules (middleware, errors) — not public API
-  addToBuffer,
-  createEnvelope,
+    // Start recurring collection timers
+    metricsTimer = setInterval(() => { collectMetrics(); }, 2000);
+    heartbeatTimer = setInterval(() => { sendHeartbeat(); }, 5000);
+    flushTimer = setInterval(() => { flushBuffer(); }, 1000);
+
+    // Unref all timers so they don't keep the process alive
+    if (metricsTimer.unref) metricsTimer.unref();
+    if (heartbeatTimer.unref) heartbeatTimer.unref();
+    if (flushTimer.unref) flushTimer.unref();
+
+    initialized = true;
+  } catch (err) {
+    console.error('[mernify-agent] init failed:', err.message);
+  }
+
+  return agent;
 };
+
+agent.middleware = function() {
+  if (!initialized) {
+    console.warn('[mernify-agent] middleware() called before init() — returning no-op');
+    return function noopMiddleware(req, res, next) { next(); };
+  }
+
+  if (!_middleware) {
+    _middleware = createMiddleware({ addToBuffer, createEnvelope });
+  }
+
+  return _middleware;
+};
+
+agent.track = function(name, value) {
+  try {
+    if (!initialized) return;
+    addToBuffer(createEnvelope('custom', { name, value }));
+  } catch (_) {
+    /* never crash host */
+  }
+};
+
+agent.log = function(level, msg) {
+  try {
+    if (!initialized) return;
+    const allowed = ['info', 'warn', 'error'];
+    if (!allowed.includes(level)) {
+      console.warn('[mernify-agent] invalid log level "' + level + '", defaulting to "info"');
+      level = 'info';
+    }
+    addToBuffer(createEnvelope('log', { level, message: msg }));
+  } catch (_) {
+    /* never crash host */
+  }
+};
+
+agent.addToBuffer = addToBuffer;
+agent.createEnvelope = createEnvelope;
 
 module.exports = agent;
