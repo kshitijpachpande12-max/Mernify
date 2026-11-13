@@ -1,0 +1,22 @@
+{
+  "name": "mernify-scripts",
+  "version": "1.0.0",
+  "description": "Tooling scripts, mock server, simulator and benchmarks for MERNIFY",
+  "main": "mock-server.js",
+  "type": "commonjs",
+  "scripts": {
+    "mock": "node mock-server.js",
+    "simulate": "node simulator.js",
+    "seed": "node seed.js",
+    "bench": "node bench.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "socket.io": "^4.7.5",
+    "socket.io-client": "^4.7.5",
+    "ulid": "^2.3.0",
+    "yargs": "^17.7.2"
+  }
+}
