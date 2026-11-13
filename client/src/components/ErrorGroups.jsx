@@ -35,22 +35,22 @@ export default function ErrorGroups({ errors = [], serviceName = '' }) {
   };
 
   return (
-    <Panel className="p-5 shadow-2xl transition-all duration-300 hover:border-rose-500/30">
+    <Panel className="p-5 shadow-2xl transition-all duration-300 hover:border-zinc-500/50 bg-[#121215] border-zinc-800/90">
       <div className="flex items-center justify-between mb-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-rose-400" />
+            <span className="w-2 h-2 rounded-full bg-red-400" />
             <h3 className="text-sm font-bold text-white tracking-tight">
-              Error Clusters & Exceptions — <span className="font-mono text-cyan-300">{serviceName}</span>
+              Error Clusters & Exceptions — <span className="font-mono text-zinc-300">{serviceName}</span>
             </h3>
           </div>
-          <p className="text-[11px] text-slate-400 mt-0.5">Stack hash deduplication and trace inspection</p>
+          <p className="text-[11px] text-zinc-400 mt-0.5">Stack hash deduplication and trace inspection</p>
         </div>
         <span
           className={`text-xs font-mono px-2.5 py-0.5 rounded-full ${
             grouped.length > 0
-              ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-              : 'bg-slate-800 text-slate-400'
+              ? 'bg-red-950/40 text-red-300 border border-red-500/30'
+              : 'bg-zinc-800 text-zinc-400'
           }`}
         >
           {grouped.length} {grouped.length === 1 ? 'cluster' : 'clusters'}
@@ -58,7 +58,7 @@ export default function ErrorGroups({ errors = [], serviceName = '' }) {
       </div>
 
       {grouped.length === 0 ? (
-        <div className="text-center py-8 text-slate-500 text-xs font-mono">
+        <div className="text-center py-8 text-zinc-500 text-xs font-mono">
           ✓ No error traces or exceptions logged
         </div>
       ) : (
@@ -68,35 +68,35 @@ export default function ErrorGroups({ errors = [], serviceName = '' }) {
             return (
               <div
                 key={group.stackHash}
-                className="bg-slate-950/80 border border-slate-800/80 rounded-xl p-3.5 text-xs transition-all hover:border-rose-500/30"
+                className="bg-[#090a0b]/80 border border-zinc-800/90 rounded-xl p-3.5 text-xs transition-all hover:border-red-500/30"
               >
                 <div
                   onClick={() => toggleExpand(group.stackHash)}
                   className="flex items-start justify-between gap-3 cursor-pointer select-none"
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-rose-300 truncate mb-1">
+                    <div className="font-semibold text-red-300 truncate mb-1">
                       {group.message || 'Unknown Exception'}
                     </div>
-                    <div className="flex items-center gap-2 text-[11px] font-mono text-slate-400">
-                      <span>route: <strong className="text-cyan-300">{group.route || 'global'}</strong></span>
+                    <div className="flex items-center gap-2 text-[11px] font-mono text-zinc-400">
+                      <span>route: <strong className="text-white">{group.route || 'global'}</strong></span>
                       <span>•</span>
-                      <span>hash: <code className="text-slate-300">{group.stackHash.slice(0, 8)}</code></span>
+                      <span>hash: <code className="text-zinc-300">{group.stackHash.slice(0, 8)}</code></span>
                       <span>•</span>
                       <span>seen: {group.lastSeen ? new Date(group.lastSeen).toLocaleTimeString() : 'now'}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="bg-rose-500/20 border border-rose-500/30 text-rose-300 font-mono text-xs px-2.5 py-0.5 rounded-full font-bold">
+                    <span className="bg-red-950/40 border border-red-500/30 text-red-300 font-mono text-xs px-2.5 py-0.5 rounded-full font-bold">
                       {group.count}x
                     </span>
-                    <span className="text-slate-500 text-xs">{isExpanded ? '▲' : '▼'}</span>
+                    <span className="text-zinc-500 text-xs">{isExpanded ? '▲' : '▼'}</span>
                   </div>
                 </div>
 
                 {isExpanded && group.stack && (
-                  <div className="mt-3 pt-3 border-t border-slate-800/80">
-                    <pre className="font-mono text-[11px] text-slate-300 bg-black/60 p-3 rounded-lg overflow-x-auto whitespace-pre-wrap leading-relaxed max-h-48 border border-white/5">
+                  <div className="mt-3 pt-3 border-t border-zinc-800/80">
+                    <pre className="font-mono text-[11px] text-zinc-300 bg-black/80 p-3 rounded-lg overflow-x-auto whitespace-pre-wrap leading-relaxed max-h-48 border border-zinc-800">
                       {group.stack}
                     </pre>
                   </div>

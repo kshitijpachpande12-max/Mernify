@@ -27,24 +27,24 @@ const MetricsChart = memo(function MetricsChart({ serviceName, data = [] }) {
   const latest = chartData[chartData.length - 1];
 
   return (
-    <Panel className="p-5 shadow-2xl transition-all duration-300 hover:border-cyan-500/30">
+    <Panel className="p-5 shadow-2xl transition-all duration-300 hover:border-zinc-500/50 bg-[#121215] border-zinc-800/90">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div>
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
             <h3 className="text-sm font-bold text-white tracking-tight">
-              Process Health & Memory — <span className="font-mono text-cyan-300">{serviceName}</span>
+              Process Health & Memory — <span className="font-mono text-zinc-300">{serviceName}</span>
             </h3>
           </div>
-          <p className="text-[11px] text-slate-400 mt-0.5">CPU utilization, RSS footprint, heap, and event-loop lag</p>
+          <p className="text-[11px] text-zinc-400 mt-0.5">CPU utilization, RSS footprint, heap, and event-loop lag</p>
         </div>
 
         {latest && (
           <div className="flex items-center gap-2 text-xs font-mono">
-            <span className="px-2.5 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300">
+            <span className="px-2.5 py-1 rounded-lg bg-zinc-800/80 border border-zinc-700/80 text-white">
               CPU: <strong>{latest.cpuPercent}%</strong>
             </span>
-            <span className="px-2.5 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-300">
+            <span className="px-2.5 py-1 rounded-lg bg-zinc-800/80 border border-zinc-700/80 text-zinc-300">
               RSS: <strong>{latest.memRssMB}MB</strong>
             </span>
           </div>
@@ -55,35 +55,35 @@ const MetricsChart = memo(function MetricsChart({ serviceName, data = [] }) {
         {(width, height) => (
           <AreaChart width={width} height={height} data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
             <ChartGradients />
-            <CartesianGrid stroke="rgba(255, 255, 255, 0.04)" strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey="time" stroke="#475569" tick={axisTick} minTickGap={28} />
-            <YAxis yAxisId="left" stroke="#475569" tick={axisTick} />
-            <YAxis yAxisId="right" orientation="right" stroke="#475569" tick={axisTick} />
+            <CartesianGrid stroke="rgba(255, 255, 255, 0.05)" strokeDasharray="3 3" vertical={false} />
+            <XAxis dataKey="time" stroke="#52525b" tick={axisTick} minTickGap={28} />
+            <YAxis yAxisId="left" stroke="#52525b" tick={axisTick} />
+            <YAxis yAxisId="right" orientation="right" stroke="#52525b" tick={axisTick} />
             <Tooltip contentStyle={tooltipStyle} isAnimationActive={false} />
-            <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
+            <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '8px', color: '#a1a1aa' }} />
             <Area
               yAxisId="left"
               dataKey="cpuPercent"
               name="CPU (%)"
-              stroke="#06b6d4"
+              stroke="#ffffff"
               strokeWidth={2}
-              fill="url(#cyanGrad)"
+              fill="url(#whiteGrad)"
               {...lineProps}
             />
             <Area
               yAxisId="right"
               dataKey="memRssMB"
               name="RSS (MB)"
-              stroke="#818cf8"
+              stroke="#94a3b8"
               strokeWidth={1.8}
-              fill="url(#indigoGrad)"
+              fill="url(#silverGrad)"
               {...lineProps}
             />
             <Area
               yAxisId="right"
               dataKey="heapUsedMB"
               name="Heap (MB)"
-              stroke="#f472b6"
+              stroke="#71717a"
               strokeWidth={1.2}
               strokeDasharray="3 3"
               fill="none"

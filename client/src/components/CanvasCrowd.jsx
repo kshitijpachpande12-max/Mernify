@@ -44,13 +44,13 @@ export default function CanvasCrowd({ className = '', nodeCount = 55 }) {
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseleave', handleMouseLeave);
 
-    // Initialize nodes
+    // Initialize nodes with luxury obsidian/monochrome palette
     const nodes = [];
     const colors = [
-      { r: 6, g: 182, b: 212 },   // cyan-500
-      { r: 99, g: 102, b: 241 },  // indigo-500
-      { r: 168, g: 85, b: 247 },  // purple-500
-      { r: 45, g: 212, b: 191 },  // teal-400
+      { r: 255, g: 255, b: 255 },  // pure crisp white
+      { r: 228, g: 228, b: 231 },  // zinc-200 platinum
+      { r: 212, g: 212, b: 216 },  // zinc-300 silver
+      { r: 161, g: 161, b: 170 },  // zinc-400 muted metallic
     ];
 
     for (let i = 0; i < nodeCount; i++) {

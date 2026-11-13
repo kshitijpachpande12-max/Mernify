@@ -98,65 +98,34 @@ export default function Dashboard() {
     token,
     selectedServices,
     timeRange,
-    isReplaying,
   });
 
-  // Calculate replay time timestamp based on slider position and available data
-  const replayTime = useMemo(() => {
-    if (!isReplaying) return null;
-    const sourceData = rawTelemetryData || telemetryData;
-    // Find min and max ts across selected services
-    let minTs = Infinity;
-    let maxTs = -Infinity;
-    selectedServices.forEach((svc) => {
-      const d = sourceData[svc];
-      if (d?.metrics?.length) {
-        minTs = Math.min(minTs, d.metrics[0].ts);
-        maxTs = Math.max(maxTs, d.metrics[d.metrics.length - 1].ts);
-      }
-      if (d?.http?.length) {
-        minTs = Math.min(minTs, d.http[0].ts);
-        maxTs = Math.max(maxTs, d.http[d.http.length - 1].ts);
-      }
-    });
-    if (minTs === Infinity || maxTs === -Infinity) return null;
-    return minTs + (maxTs - minTs) * (replaySliderValue / 100);
-  }, [isReplaying, replaySliderValue, telemetryData, rawTelemetryData, selectedServices]);
-
-  // Auto-discover services from live incoming telemetry if services list was empty
-  useEffect(() => {
-    const liveKeys = Object.keys(telemetryData);
-    if (liveKeys.length > 0) {
-      setServices((prev) => {
-        const existing = prev.map((s) => (typeof s === 'string' ? s : s.serviceName));
-        const newOnes = liveKeys.filter((k) => !existing.includes(k));
-        if (newOnes.length > 0) {
-          return [
-            ...prev,
-            ...newOnes.map((name) => ({
-              serviceName: name,
-              instances: [{ instanceId: 'inst-1', status: 'up', lastSeen: Date.now() }],
-            })),
-          ];
-        }
-        return prev;
-      });
-
-      setSelectedServices((prev) => {
-        if (prev.length === 0) return liveKeys;
-        return prev;
-      });
-
-      setActiveTabService((prev) => {
-        if (!prev) return liveKeys[0];
-        return prev;
-      });
+  // Calculate incident replay bounds
+  const replayBounds = useMemo(() => {
+    if (!rawTelemetryData || rawTelemetryData.length === 0) {
+      return { minTs: 0, maxTs: 0 };
     }
-  }, [telemetryData]);
+    const timestamps = rawTelemetryData.map((d) => d.timestamp).filter(Boolean);
+    if (timestamps.length === 0) return { minTs: 0, maxTs: 0 };
+    return {
+      minTs: Math.min(...timestamps),
+      maxTs: Math.max(...timestamps),
+    };
+  }, [rawTelemetryData]);
 
-  // Active service telemetry data, filtered when scrubbing historical incident replay
+  // Scrubbed timestamp for incident replay
+  const replayTime = useMemo(() => {
+    if (!isReplaying || !replayBounds.minTs || !replayBounds.maxTs) return null;
+    const span = replayBounds.maxTs - replayBounds.minTs;
+    if (span <= 0) return replayBounds.maxTs;
+    return replayBounds.minTs + (span * replaySliderValue) / 100;
+  }, [isReplaying, replayBounds, replaySliderValue]);
+
+  // Scrub active service data when replaying
   const activeData = useMemo(() => {
-    if (!activeTabService || !telemetryData[activeTabService]) return null;
+    if (!activeTabService || !telemetryData[activeTabService]) {
+      return { metrics: [], http: [], errors: [], byRoute: {} };
+    }
     const raw = telemetryData[activeTabService];
     if (!isReplaying || replayTime === null) {
       return raw;
@@ -170,26 +139,28 @@ export default function Dashboard() {
   }, [activeTabService, telemetryData, isReplaying, replayTime]);
 
   return (
-    <div className="min-h-screen bg-[#05060d] text-slate-100 flex flex-col pb-12">
+    <div className="min-h-screen bg-[#090a0b] text-white flex flex-col pb-12 selection:bg-white/20 selection:text-white">
       {/* Top Navbar */}
-      <header className="bg-slate-950/80 border-b border-white/10 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-40 backdrop-blur">
+      <header className="bg-[#0d0e11]/90 border-b border-zinc-800/80 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-40 backdrop-blur-xl">
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate('/projects')}
-            className="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-1.5"
+            className="text-zinc-400 hover:text-white transition-colors text-sm flex items-center gap-1.5 font-medium cursor-pointer"
           >
             ← Projects
           </button>
-          <div className="h-4 w-px bg-slate-800" />
+          <div className="h-4 w-px bg-zinc-800" />
           <h1 className="font-bold text-white text-base tracking-tight flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-            <GradientText>Sentinel Telemetry</GradientText> — <span className="font-mono text-cyan-400 text-sm">{projectId}</span>
+            <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+            <GradientText className="tracking-tight">Sentinel Telemetry</GradientText>
+            <span className="text-zinc-600">•</span>
+            <span className="font-mono text-zinc-300 text-xs px-2.5 py-0.5 rounded-full bg-[#121215] border border-zinc-800">{projectId}</span>
           </h1>
         </div>
 
         {/* Time-Range Selector & Controls */}
         <div className="flex items-center gap-3">
-          <div className="inline-flex rounded-lg bg-slate-800 p-1 border border-slate-700 text-xs">
+          <div className="inline-flex rounded-xl bg-[#121215] p-1 border border-zinc-800 text-xs font-mono">
             {['live', '15min', '1h', '6h'].map((t) => (
               <button
                 key={t}
@@ -197,10 +168,10 @@ export default function Dashboard() {
                   setTimeRange(t);
                   if (t === 'live') setIsReplaying(false);
                 }}
-                className={`px-3 py-1 rounded-md transition-all capitalize ${
+                className={`px-3 py-1 rounded-lg transition-all capitalize cursor-pointer ${
                   timeRange === t
-                    ? 'bg-cyan-600 text-white font-medium shadow-sm'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-white text-black font-bold shadow-sm'
+                    : 'text-zinc-400 hover:text-white'
                 }`}
               >
                 {t}
@@ -210,7 +181,7 @@ export default function Dashboard() {
 
           <button
             onClick={logout}
-            className="text-xs text-slate-400 hover:text-rose-400 transition-colors ml-2"
+            className="text-xs text-zinc-400 hover:text-white transition-colors ml-2 px-3 py-1.5 rounded-lg hover:bg-zinc-800/70 cursor-pointer"
           >
             Sign out
           </button>
@@ -218,29 +189,29 @@ export default function Dashboard() {
       </header>
 
       {/* Replay Scrubbing Bar (Incident Replay) */}
-      <div className="bg-slate-900/60 border-b border-slate-800/80 px-6 py-2 flex flex-wrap items-center gap-4 text-xs">
+      <div className="bg-[#0d0e11]/95 border-b border-zinc-800/80 px-6 py-2.5 flex flex-wrap items-center gap-4 text-xs">
         <label className="flex items-center gap-2 cursor-pointer select-none">
           <input
             type="checkbox"
             checked={isReplaying}
             onChange={(e) => setIsReplaying(e.target.checked)}
-            className="w-4 h-4 rounded bg-slate-800 border-slate-700 text-amber-500 focus:ring-amber-500"
+            className="w-4 h-4 rounded bg-[#090a0b] border-zinc-700 text-amber-500 focus:ring-0"
           />
-          <span className={isReplaying ? 'text-amber-400 font-medium' : 'text-slate-400'}>
-            Replay Incident Mode {isReplaying && '(Live Paused)'}
+          <span className={isReplaying ? 'text-amber-400 font-bold' : 'text-zinc-400'}>
+            Replay Incident Mode {isReplaying && '(Live Ingestion Paused)'}
           </span>
         </label>
 
         {isReplaying && (
           <div className="flex-1 flex items-center gap-3 min-w-[200px]">
-            <span className="text-slate-500">History Scrub:</span>
+            <span className="text-zinc-500 font-mono">Scrub:</span>
             <input
               type="range"
               min="0"
               max="100"
               value={replaySliderValue}
               onChange={(e) => setReplaySliderValue(Number(e.target.value))}
-              className="flex-1 h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+              className="flex-1 h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-amber-400"
             />
             <span className="font-mono text-amber-300 text-xs">
               {replaySliderValue}% {replayTime ? `(${new Date(replayTime).toLocaleTimeString()})` : ''}
@@ -249,29 +220,29 @@ export default function Dashboard() {
         )}
 
         {isLoadingHistory && (
-          <span className="text-cyan-400 flex items-center gap-1.5 animate-pulse ml-auto">
-            <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24">
+          <span className="text-zinc-300 flex items-center gap-1.5 animate-pulse ml-auto font-mono text-xs">
+            <svg className="animate-spin h-3.5 w-3.5 text-white" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
-            Loading historical data…
+            Loading historical frames…
           </span>
         )}
       </div>
 
       {/* Main Body */}
       <div className="flex-1 flex flex-col md:flex-row">
-        {/* Sidebar / Services List */}
-        <aside className="w-full md:w-64 bg-slate-900/40 border-r border-slate-800 p-4 shrink-0 flex flex-col gap-4">
+        {/* Sidebar / Services List & Decluttered Alerts */}
+        <aside className="w-full md:w-72 bg-[#0d0e11]/60 border-r border-zinc-800/80 p-4 shrink-0 flex flex-col gap-4">
           <div>
             <div className="flex items-center justify-between mb-2">
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400">Services</h2>
-              <span className="text-[11px] text-slate-500">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-400 font-mono">Microservices</h2>
+              <span className="text-[11px] text-zinc-500 font-mono">
                 {selectedServices.length}/{services.length} selected
               </span>
             </div>
             {loadingServices ? (
-              <div className="p-4 text-center text-slate-500 text-xs">Discovering services…</div>
+              <div className="p-4 text-center text-zinc-500 text-xs font-mono">Discovering services…</div>
             ) : (
               <ServiceList
                 services={services}
@@ -290,25 +261,25 @@ export default function Dashboard() {
         {/* Content Area */}
         <main className="flex-1 p-6 space-y-6 overflow-x-hidden">
           {selectedServices.length === 0 ? (
-            <div className="h-96 flex flex-col items-center justify-center border border-dashed border-slate-800 rounded-2xl text-slate-500">
-              <svg className="w-12 h-12 mb-3 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="h-96 flex flex-col items-center justify-center border border-dashed border-zinc-800 rounded-2xl text-zinc-500 bg-[#121215]/30">
+              <svg className="w-12 h-12 mb-3 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
-              <p className="text-base font-medium text-slate-300">Select a service to view metrics</p>
-              <p className="text-xs mt-1 text-slate-500">Check one or more services from the left sidebar</p>
+              <p className="text-base font-bold text-white">Select a microservice to inspect telemetry</p>
+              <p className="text-xs mt-1 text-zinc-400">Check one or more services from the left control panel</p>
             </div>
           ) : (
             <>
               {/* Service Tabs */}
-              <div className="flex items-center gap-2 border-b border-slate-800 pb-3 overflow-x-auto">
+              <div className="flex items-center gap-2 border-b border-zinc-800 pb-3 overflow-x-auto">
                 {selectedServices.map((svc) => (
                   <button
                     key={svc}
                     onClick={() => setActiveTabService(svc)}
-                    className={`px-4 py-2 rounded-lg text-xs font-mono transition-all flex items-center gap-2 ${
+                    className={`px-4 py-2 rounded-xl text-xs font-mono transition-all flex items-center gap-2 cursor-pointer ${
                       activeTabService === svc
-                        ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 font-semibold'
-                        : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200'
+                        ? 'bg-[#18191d] text-white border border-zinc-600 font-bold shadow-md'
+                        : 'bg-[#121215] border border-zinc-800 text-zinc-400 hover:text-white'
                     }`}
                   >
                     <span>{svc}</span>
@@ -327,48 +298,48 @@ export default function Dashboard() {
 
                     return (
                       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div className="p-4 rounded-xl bg-slate-900/80 border border-cyan-500/20 backdrop-blur-md shadow-lg shadow-cyan-950/20">
-                          <div className="flex items-center justify-between text-xs text-slate-400 font-mono mb-1">
-                            <span>CPU USAGE</span>
-                            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                        <div className="p-4 rounded-2xl bg-[#121215] border border-zinc-800/90 shadow-xl">
+                          <div className="flex items-center justify-between text-xs text-zinc-400 font-mono mb-1">
+                            <span>CPU UTILIZATION</span>
+                            <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
                           </div>
                           <div className="text-2xl font-bold text-white font-mono tracking-tight">
                             {m?.cpuPercent !== undefined ? `${m.cpuPercent.toFixed(1)}%` : '—'}
                           </div>
-                          <div className="text-[10px] text-cyan-400 font-mono mt-1">Core utilization</div>
+                          <div className="text-[10px] text-zinc-400 font-mono mt-1">Core process footprint</div>
                         </div>
 
-                        <div className="p-4 rounded-xl bg-slate-900/80 border border-indigo-500/20 backdrop-blur-md shadow-lg shadow-indigo-950/20">
-                          <div className="flex items-center justify-between text-xs text-slate-400 font-mono mb-1">
+                        <div className="p-4 rounded-2xl bg-[#121215] border border-zinc-800/90 shadow-xl">
+                          <div className="flex items-center justify-between text-xs text-zinc-400 font-mono mb-1">
                             <span>MEMORY (RSS)</span>
-                            <span className="w-2 h-2 rounded-full bg-indigo-400" />
+                            <span className="w-2 h-2 rounded-full bg-zinc-400" />
                           </div>
                           <div className="text-2xl font-bold text-white font-mono tracking-tight">
                             {m?.memRssMB !== undefined ? `${Math.round(m.memRssMB)} MB` : '—'}
                           </div>
-                          <div className="text-[10px] text-indigo-400 font-mono mt-1">Resident process set</div>
+                          <div className="text-[10px] text-zinc-400 font-mono mt-1">Resident process set</div>
                         </div>
 
-                        <div className="p-4 rounded-xl bg-slate-900/80 border border-emerald-500/20 backdrop-blur-md shadow-lg shadow-emerald-950/20">
-                          <div className="flex items-center justify-between text-xs text-slate-400 font-mono mb-1">
+                        <div className="p-4 rounded-2xl bg-[#121215] border border-zinc-800/90 shadow-xl">
+                          <div className="flex items-center justify-between text-xs text-zinc-400 font-mono mb-1">
                             <span>P99 LATENCY</span>
                             <span className="w-2 h-2 rounded-full bg-emerald-400" />
                           </div>
                           <div className="text-2xl font-bold text-white font-mono tracking-tight">
                             {h?.latencyP99 !== undefined ? `${h.latencyP99.toFixed(1)} ms` : '—'}
                           </div>
-                          <div className="text-[10px] text-emerald-400 font-mono mt-1">Tail response time</div>
+                          <div className="text-[10px] text-emerald-400 font-mono mt-1">Critical tail threshold</div>
                         </div>
 
-                        <div className="p-4 rounded-xl bg-slate-900/80 border border-sky-500/20 backdrop-blur-md shadow-lg shadow-sky-950/20">
-                          <div className="flex items-center justify-between text-xs text-slate-400 font-mono mb-1">
+                        <div className="p-4 rounded-2xl bg-[#121215] border border-zinc-800/90 shadow-xl">
+                          <div className="flex items-center justify-between text-xs text-zinc-400 font-mono mb-1">
                             <span>THROUGHPUT</span>
-                            <span className="w-2 h-2 rounded-full bg-sky-400" />
+                            <span className="w-2 h-2 rounded-full bg-white" />
                           </div>
                           <div className="text-2xl font-bold text-white font-mono tracking-tight">
                             {h?.requests !== undefined ? `${h.requests} req/s` : '—'}
                           </div>
-                          <div className="text-[10px] text-sky-400 font-mono mt-1">Active request stream</div>
+                          <div className="text-[10px] text-zinc-400 font-mono mt-1">Active request stream</div>
                         </div>
                       </div>
                     );

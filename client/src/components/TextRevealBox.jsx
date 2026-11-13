@@ -19,23 +19,23 @@ export default function TextRevealBox({
 
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl bg-slate-900/70 border border-slate-800/80 p-5 sm:p-6 backdrop-blur-xl shadow-2xl transition-all duration-500 hover:border-cyan-500/40 hover:shadow-[0_0_35px_rgba(6,182,212,0.15)] group ${className}`}
+      className={`relative overflow-hidden rounded-2xl bg-[#121215]/90 border border-zinc-800/90 p-5 sm:p-6 backdrop-blur-xl shadow-2xl transition-all duration-500 hover:border-zinc-600 hover:shadow-[0_0_35px_rgba(255,255,255,0.06)] group ${className}`}
     >
       {/* Sliding Accent Reveal Curtain */}
       <div
-        className={`absolute inset-0 bg-gradient-to-r from-cyan-500 via-indigo-500 to-purple-600 z-20 pointer-events-none transition-transform duration-1000 ease-in-out ${
+        className={`absolute inset-0 bg-gradient-to-r from-zinc-800 via-zinc-400 to-white z-20 pointer-events-none transition-transform duration-1000 ease-in-out ${
           revealed ? 'translate-x-full opacity-0' : 'translate-x-0 opacity-100'
         }`}
       />
 
       {/* Decorative top shimmer bar */}
-      <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
+      <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/80 to-transparent opacity-40 group-hover:opacity-100 transition-opacity" />
 
       {/* Header Pill */}
       {title && (
         <div className="flex items-center gap-2 mb-3">
-          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-          <span className="text-xs font-mono font-semibold tracking-wider text-cyan-400 uppercase">
+          <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+          <span className="text-xs font-mono font-semibold tracking-wider text-zinc-300 uppercase">
             {title}
           </span>
         </div>
@@ -43,7 +43,7 @@ export default function TextRevealBox({
 
       {/* Revealed Content */}
       <p
-        className={`text-slate-300 text-sm sm:text-base leading-relaxed font-normal transition-all duration-700 ${
+        className={`text-zinc-300 text-sm sm:text-base leading-relaxed font-normal transition-all duration-700 ${
           revealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
         }`}
       >
@@ -51,21 +51,21 @@ export default function TextRevealBox({
       </p>
 
       {/* Highlights Grid */}
-      <div className="mt-4 pt-4 border-t border-slate-800/60 grid grid-cols-2 gap-3 text-xs font-mono">
-        <div className="flex items-center gap-2 text-slate-400">
-          <span className="text-cyan-400">✓</span>
+      <div className="mt-4 pt-4 border-t border-zinc-800/70 grid grid-cols-2 gap-3 text-xs font-mono">
+        <div className="flex items-center gap-2 text-zinc-400">
+          <span className="text-white font-bold">✓</span>
           <span>100k+ ev/sec Ingest</span>
         </div>
-        <div className="flex items-center gap-2 text-slate-400">
-          <span className="text-indigo-400">✓</span>
+        <div className="flex items-center gap-2 text-zinc-400">
+          <span className="text-white font-bold">✓</span>
           <span>Z-Score Outlier AI</span>
         </div>
-        <div className="flex items-center gap-2 text-slate-400">
-          <span className="text-teal-400">✓</span>
+        <div className="flex items-center gap-2 text-zinc-400">
+          <span className="text-white font-bold">✓</span>
           <span>Timeline Scrubbing</span>
         </div>
-        <div className="flex items-center gap-2 text-slate-400">
-          <span className="text-purple-400">✓</span>
+        <div className="flex items-center gap-2 text-zinc-400">
+          <span className="text-white font-bold">✓</span>
           <span>Zero-Drop Buffers</span>
         </div>
       </div>

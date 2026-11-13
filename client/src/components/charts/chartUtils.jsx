@@ -19,18 +19,18 @@ export function formatTime(ts) {
   return new Date(ts).toTimeString().split(' ')[0];
 }
 
-export const axisTick = { fill: '#64748b', fontSize: 10, fontFamily: 'monospace' };
+export const axisTick = { fill: '#71717a', fontSize: 10, fontFamily: 'monospace' };
 
 export const tooltipStyle = {
-  backgroundColor: 'rgba(2, 6, 23, 0.92)',
+  backgroundColor: 'rgba(18, 18, 21, 0.96)',
   backdropFilter: 'blur(16px)',
-  border: '1px solid rgba(255, 255, 255, 0.12)',
+  border: '1px solid rgba(255, 255, 255, 0.15)',
   borderRadius: '0.85rem',
-  boxShadow: '0 10px 35px -5px rgba(0, 0, 0, 0.7)',
+  boxShadow: '0 10px 35px -5px rgba(0, 0, 0, 0.8)',
   fontSize: '11px',
   fontFamily: 'monospace',
   padding: '10px 14px',
-  color: '#f8fafc',
+  color: '#ffffff',
 };
 
 // Smooth monotone curves with anti-aliasing
@@ -44,45 +44,45 @@ const lineProps = {
 export { lineProps };
 
 /**
- * Reusable SVG Gradients for rich Area/Line fills
+ * Reusable SVG Gradients for luxury monochrome and telemetry fills
  */
 export function ChartGradients() {
   return (
     <defs>
-      {/* Cyan to Transparent */}
-      <linearGradient id="cyanGrad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor="#06b6d4" stopOpacity={0.35} />
-        <stop offset="100%" stopColor="#06b6d4" stopOpacity={0.0} />
+      {/* Pure White to Transparent */}
+      <linearGradient id="whiteGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#ffffff" stopOpacity={0.28} />
+        <stop offset="100%" stopColor="#ffffff" stopOpacity={0.0} />
       </linearGradient>
 
-      {/* Indigo to Transparent */}
-      <linearGradient id="indigoGrad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor="#6366f1" stopOpacity={0.3} />
-        <stop offset="100%" stopColor="#6366f1" stopOpacity={0.0} />
+      {/* Silver / Slate to Transparent */}
+      <linearGradient id="silverGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#94a3b8" stopOpacity={0.22} />
+        <stop offset="100%" stopColor="#94a3b8" stopOpacity={0.0} />
       </linearGradient>
 
       {/* Emerald to Transparent */}
       <linearGradient id="emeraldGrad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor="#10b981" stopOpacity={0.3} />
-        <stop offset="100%" stopColor="#10b981" stopOpacity={0.0} />
+        <stop offset="0%" stopColor="#34d399" stopOpacity={0.22} />
+        <stop offset="100%" stopColor="#34d399" stopOpacity={0.0} />
       </linearGradient>
 
       {/* Amber to Transparent */}
       <linearGradient id="amberGrad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.3} />
-        <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.0} />
+        <stop offset="0%" stopColor="#fbbf24" stopOpacity={0.22} />
+        <stop offset="100%" stopColor="#fbbf24" stopOpacity={0.0} />
       </linearGradient>
 
       {/* Rose to Transparent */}
       <linearGradient id="roseGrad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor="#f43f5e" stopOpacity={0.35} />
-        <stop offset="100%" stopColor="#f43f5e" stopOpacity={0.0} />
+        <stop offset="0%" stopColor="#f87171" stopOpacity={0.26} />
+        <stop offset="100%" stopColor="#f87171" stopOpacity={0.0} />
       </linearGradient>
 
-      {/* Violet to Transparent */}
-      <linearGradient id="violetGrad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor="#a855f7" stopOpacity={0.3} />
-        <stop offset="100%" stopColor="#a855f7" stopOpacity={0.0} />
+      {/* Legacy Cyan fallback */}
+      <linearGradient id="cyanGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#ffffff" stopOpacity={0.25} />
+        <stop offset="100%" stopColor="#ffffff" stopOpacity={0.0} />
       </linearGradient>
     </defs>
   );
@@ -120,9 +120,9 @@ export function ChartFrame({ children, empty }) {
   return (
     <div ref={ref} className="h-64 w-full">
       {empty ? (
-        <div className="flex h-full items-center justify-center text-xs text-slate-500 font-mono">
+        <div className="flex h-full items-center justify-center text-xs text-zinc-500 font-mono">
           <span className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
             {empty}
           </span>
         </div>

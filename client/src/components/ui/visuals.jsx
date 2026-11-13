@@ -27,7 +27,7 @@ export function MagicCard({ children, className = '' }) {
         node.style.setProperty('--mx', `${event.clientX - rect.left}px`);
         node.style.setProperty('--my', `${event.clientY - rect.top}px`);
       }}
-      className={`magic-card relative overflow-hidden rounded-2xl border border-white/10 bg-slate-950/75 shadow-2xl shadow-cyan-950/20 backdrop-blur-xl ${className}`}
+      className={`magic-card relative overflow-hidden rounded-2xl border border-zinc-800/80 bg-[#121215]/90 shadow-2xl shadow-black/50 backdrop-blur-xl ${className}`}
     >
       <span className="border-beam" aria-hidden />
       <div className="relative z-10">{children}</div>
@@ -37,7 +37,7 @@ export function MagicCard({ children, className = '' }) {
 
 export function Panel({ children, className = '' }) {
   return (
-    <div className={`relative overflow-hidden rounded-xl border border-white/10 bg-slate-900/75 ${className}`}>
+    <div className={`relative overflow-hidden rounded-2xl border border-zinc-800/90 bg-[#121215]/90 ${className}`}>
       <span className="border-beam border-beam-slow" aria-hidden />
       <div className="relative z-10">{children}</div>
     </div>
@@ -46,7 +46,7 @@ export function Panel({ children, className = '' }) {
 
 export function ShinyButton({ className = '', children, ...props }) {
   return (
-    <button className={`shiny-btn rounded-lg px-6 py-2.5 font-medium transition-transform active:scale-[0.98] ${className}`} {...props}>
+    <button className={`shiny-btn rounded-xl px-6 py-2.5 font-bold transition-transform active:scale-[0.98] cursor-pointer ${className}`} {...props}>
       <span className="relative z-10">{children}</span>
     </button>
   );

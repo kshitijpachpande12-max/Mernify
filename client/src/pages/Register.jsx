@@ -29,16 +29,16 @@ export default function Register() {
   };
 
   return (
-    <div className="relative min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4 sm:p-6 lg:p-12 overflow-x-hidden selection:bg-cyan-500/30 selection:text-cyan-200">
+    <div className="relative min-h-screen bg-[#090a0b] text-white flex items-center justify-center p-4 sm:p-6 lg:p-12 overflow-x-hidden selection:bg-white/20 selection:text-white">
       {/* Vercel Liquid Simulation Layer */}
-      <LiquidSimulation className="opacity-90" />
+      <LiquidSimulation className="opacity-80" />
 
       {/* Canvas Crowd Particle Layer */}
-      <CanvasCrowd nodeCount={50} className="opacity-60" />
+      <CanvasCrowd nodeCount={50} className="opacity-55" />
 
       {/* Grid Pattern */}
-      <div className="pointer-events-none absolute inset-0 bg-grid-pattern opacity-15" />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-slate-950/40 via-transparent to-slate-950/80" />
+      <div className="pointer-events-none absolute inset-0 bg-grid-pattern opacity-10" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#090a0b]/60 via-transparent to-[#090a0b]/90" />
 
       {/* Card Container */}
       <div className="relative z-10 w-full max-w-md">
@@ -46,14 +46,14 @@ export default function Register() {
           <KineticTitle subtitle="DEPLOY TELEMETRY CONTROL PLANE" />
         </div>
 
-        <div className="relative rounded-3xl bg-slate-900/80 border border-white/10 p-7 sm:p-9 backdrop-blur-2xl shadow-[0_0_60px_rgba(0,0,0,0.8)] transition-all hover:border-cyan-500/40">
+        <div className="relative rounded-3xl bg-[#121215]/95 border border-zinc-800/90 p-7 sm:p-9 backdrop-blur-2xl shadow-[0_0_60px_rgba(0,0,0,0.8)] transition-all hover:border-zinc-600">
           <div className="mb-6 text-center">
             <h2 className="text-2xl font-bold text-white tracking-tight">Create Organization</h2>
-            <p className="text-xs text-slate-400 mt-1">Initialize your distributed telemetry workspace</p>
+            <p className="text-xs text-zinc-400 mt-1">Initialize your distributed telemetry workspace</p>
           </div>
 
           {error && (
-            <div className="bg-rose-500/10 border border-rose-500/30 text-rose-300 px-4 py-3 rounded-xl mb-5 text-xs flex items-center gap-2">
+            <div className="bg-red-950/40 border border-red-500/30 text-red-300 px-4 py-3 rounded-xl mb-5 text-xs flex items-center gap-2">
               <span className="text-base">⚠️</span>
               <span>{error}</span>
             </div>
@@ -61,7 +61,7 @@ export default function Register() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-mono uppercase tracking-wider text-slate-300 mb-1.5">
+              <label className="block text-xs font-mono uppercase tracking-wider text-zinc-300 mb-1.5 font-medium">
                 Full Name / Organization
               </label>
               <input
@@ -70,12 +70,12 @@ export default function Register() {
                 onChange={(e) => setName(e.target.value)}
                 required
                 placeholder="Cloud Operations Team"
-                className="w-full px-4 py-3 bg-slate-950/80 border border-slate-700/80 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-[#090a0b] border border-zinc-700 rounded-xl text-white text-sm placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-400 focus:border-zinc-400 transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-mono uppercase tracking-wider text-slate-300 mb-1.5">
+              <label className="block text-xs font-mono uppercase tracking-wider text-zinc-300 mb-1.5 font-medium">
                 Work Email
               </label>
               <input
@@ -84,12 +84,12 @@ export default function Register() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 placeholder="ops@company.io"
-                className="w-full px-4 py-3 bg-slate-950/80 border border-slate-700/80 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-[#090a0b] border border-zinc-700 rounded-xl text-white text-sm placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-400 focus:border-zinc-400 transition-all font-mono"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-mono uppercase tracking-wider text-slate-300 mb-1.5">
+              <label className="block text-xs font-mono uppercase tracking-wider text-zinc-300 mb-1.5 font-medium">
                 Password
               </label>
               <input
@@ -99,18 +99,18 @@ export default function Register() {
                 required
                 minLength={6}
                 placeholder="••••••••••••"
-                className="w-full px-4 py-3 bg-slate-950/80 border border-slate-700/80 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-[#090a0b] border border-zinc-700 rounded-xl text-white text-sm placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-400 focus:border-zinc-400 transition-all"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 disabled:opacity-50 text-white font-semibold text-sm rounded-xl shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 transition-all duration-300 transform active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer mt-2"
+              className="w-full py-3.5 bg-white hover:bg-zinc-200 disabled:opacity-50 text-black font-bold text-sm rounded-xl shadow-lg shadow-white/10 transition-all duration-200 transform active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer mt-2 uppercase tracking-wider"
             >
               {loading ? (
                 <span className="flex items-center gap-2">
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                  <svg className="animate-spin h-4 w-4 text-black" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
@@ -122,10 +122,10 @@ export default function Register() {
             </button>
           </form>
 
-          <div className="mt-6 pt-5 border-t border-slate-800 text-center">
-            <p className="text-xs text-slate-400">
+          <div className="mt-6 pt-5 border-t border-zinc-800 text-center">
+            <p className="text-xs text-zinc-400">
               Already have an account?{' '}
-              <Link to="/login" className="text-cyan-400 hover:text-cyan-300 font-medium ml-1">
+              <Link to="/login" className="text-white hover:text-zinc-300 underline font-semibold ml-1">
                 Sign in
               </Link>
             </p>
