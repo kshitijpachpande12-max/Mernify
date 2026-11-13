@@ -66,24 +66,26 @@ export default function Dashboard() {
     };
   }, [projectId, token]);
 
-  // Handle service checkbox toggle
+  // Handle service checkbox toggle.
+  // Pure updater: no other state is set inside it (safe under Strict Mode).
   const toggleService = useCallback((svcName) => {
-    setSelectedServices((prev) => {
-      if (prev.includes(svcName)) {
-        const next = prev.filter((s) => s !== svcName);
-        if (activeTabService === svcName) {
-          setActiveTabService(next[0] || null);
-        }
-        return next;
-      } else {
-        const next = [...prev, svcName];
-        if (!activeTabService) setActiveTabService(svcName);
-        return next;
-      }
-    });
-  }, [activeTabService]);
+    setSelectedServices((prev) =>
+      prev.includes(svcName) ? prev.filter((s) => s !== svcName) : [...prev, svcName]
+    );
+  }, []);
 
-  // Real-time telemetry ingestion and historical fetch
+  // Keep the active tab valid whenever the selection changes:
+  // - if the active service was unchecked, fall back to the first selected one
+  // - if nothing was active yet, pick the first selected one
+  useEffect(() => {
+    setActiveTabService((prev) => {
+      if (prev && selectedServices.includes(prev)) return prev;
+      return selectedServices[0] || null;
+    });
+  }, [selectedServices]);
+
+  // Real-time telemetry ingestion and historical fetch.
+  // isReplaying is passed so the hook actually pauses live ingestion.
   const {
     telemetryData,
     rawTelemetryData,
@@ -98,19 +100,30 @@ export default function Dashboard() {
     token,
     selectedServices,
     timeRange,
+    isReplaying,
   });
 
-  // Calculate incident replay bounds
+  // Calculate incident replay bounds.
+  // rawTelemetryData is an object keyed by service name:
+  //   { svc: { metrics: [], http: [], errors: [], byRoute: {} } }
   const replayBounds = useMemo(() => {
-    if (!rawTelemetryData || rawTelemetryData.length === 0) {
-      return { minTs: 0, maxTs: 0 };
+    let minTs = Infinity;
+    let maxTs = -Infinity;
+
+    for (const svc of Object.values(rawTelemetryData || {})) {
+      if (!svc) continue;
+      for (const series of [svc.metrics, svc.http, svc.errors]) {
+        if (!Array.isArray(series)) continue;
+        for (const pt of series) {
+          if (Number.isFinite(pt.ts)) {
+            if (pt.ts < minTs) minTs = pt.ts;
+            if (pt.ts > maxTs) maxTs = pt.ts;
+          }
+        }
+      }
     }
-    const timestamps = rawTelemetryData.map((d) => d.timestamp).filter(Boolean);
-    if (timestamps.length === 0) return { minTs: 0, maxTs: 0 };
-    return {
-      minTs: Math.min(...timestamps),
-      maxTs: Math.max(...timestamps),
-    };
+
+    return minTs === Infinity ? { minTs: 0, maxTs: 0 } : { minTs, maxTs };
   }, [rawTelemetryData]);
 
   // Scrubbed timestamp for incident replay

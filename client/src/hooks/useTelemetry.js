@@ -5,9 +5,16 @@ const API = 'http://localhost:5000';
 const MAX_POINTS = 300;
 const FLUSH_MS = 200;
 
-export function useTelemetry({ projectId, token, selectedServices = [], timeRange = 'live', isReplaying = false, replayTime = null }) {
+export function useTelemetry({
+  projectId,
+  token,
+  selectedServices = [],
+  timeRange = 'live',
+  isReplaying = false,
+  replayTime = null,
+}) {
   // Service-keyed data maps
-  // Each service has: metrics: [], http: [], errors: [], routes: {}
+  // Each service has: metrics: [], http: [], errors: [], byRoute: {}
   const [telemetryData, setTelemetryData] = useState({});
   const [alerts, setAlerts] = useState([]);
   const [serviceStatuses, setServiceStatuses] = useState({});
@@ -21,6 +28,20 @@ export function useTelemetry({ projectId, token, selectedServices = [], timeRang
   const seenEventIdsRef = useRef(new Set());
   const asOfMapRef = useRef(new Map()); // serviceName -> asOf ts
   const socketRef = useRef(null);
+
+  // Refs that always hold the latest values, so long-lived socket handlers
+  // never read stale props and we don't have to reconnect when they change.
+  const selectedServicesRef = useRef(selectedServices);
+  useEffect(() => {
+    selectedServicesRef.current = selectedServices;
+  }, [selectedServices]);
+
+  const isReplayingRef = useRef(isReplaying);
+  useEffect(() => {
+    isReplayingRef.current = isReplaying;
+  }, [isReplaying]);
+
+  const flushBufferRef = useRef(null);
 
   // Counters for debug footer
   const eventCounterRef = useRef(0);
@@ -44,7 +65,9 @@ export function useTelemetry({ projectId, token, selectedServices = [], timeRang
     };
   }, []);
 
-  // Socket connection to "/dashboard"
+  // Socket connection to "/dashboard".
+  // NOTE: isReplaying is intentionally NOT a dependency. It is read through
+  // isReplayingRef so toggling replay mode does not tear down the socket.
   useEffect(() => {
     if (!token || !projectId) return;
 
@@ -55,9 +78,11 @@ export function useTelemetry({ projectId, token, selectedServices = [], timeRang
     socketRef.current = socket;
 
     socket.on('connect', () => {
+      // Use the ref so a reconnect resubscribes to the CURRENT selection
+      const current = selectedServicesRef.current;
       socket.emit('subscribe', {
         projectId,
-        services: selectedServices && selectedServices.length > 0 ? selectedServices : undefined,
+        services: current && current.length > 0 ? current : undefined,
       });
     });
 
@@ -69,8 +94,8 @@ export function useTelemetry({ projectId, token, selectedServices = [], timeRang
       if (!Array.isArray(batch)) return;
       eventCounterRef.current += batch.length;
 
-      // If replaying incident, pause live stream ingestion into buffer
-      if (isReplaying) return;
+      // While replaying an incident, drop live events (ingestion paused)
+      if (isReplayingRef.current) return;
 
       bufferRef.current.push(...batch);
 
@@ -103,7 +128,7 @@ export function useTelemetry({ projectId, token, selectedServices = [], timeRang
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [projectId, token, isReplaying]);
+  }, [projectId, token]);
 
   // Handle subscription diffs when selectedServices change
   const prevSelectedRef = useRef([]);
@@ -128,88 +153,85 @@ export function useTelemetry({ projectId, token, selectedServices = [], timeRang
     prevSelectedRef.current = selectedServices;
   }, [projectId, selectedServices]);
 
-  // Ref to always access latest selectedServices inside flushBuffer
-  const selectedServicesRef = useRef(selectedServices);
-  useEffect(() => {
-    selectedServicesRef.current = selectedServices;
-  }, [selectedServices]);
-
-  const flushBufferRef = useRef(null);
-
   // Apply a buffered batch in one pass per service.
+  // All filtering / dedupe (which mutates refs) happens OUTSIDE the state
+  // updater, so the updater stays pure and is safe under React Strict Mode
+  // (which may invoke updaters twice in development).
   const flushBuffer = useCallback(() => {
     const batch = bufferRef.current;
     if (batch.length === 0) return;
     bufferRef.current = [];
 
-    setTelemetryData((prevData) => {
-      const incoming = new Map();
-      const currentSelected = selectedServicesRef.current;
+    const incoming = new Map();
+    const currentSelected = selectedServicesRef.current;
 
-      for (const envelope of batch) {
-        const { eventId, serviceName, ts, type, payload } = envelope;
+    for (const envelope of batch) {
+      const { eventId, serviceName, ts, type, payload } = envelope;
 
-        if (currentSelected && currentSelected.length > 0 && !currentSelected.includes(serviceName)) {
-          continue;
-        }
+      if (currentSelected && currentSelected.length > 0 && !currentSelected.includes(serviceName)) {
+        continue;
+      }
 
-        if (eventId) {
-          if (seenEventIdsRef.current.has(eventId)) continue;
-          seenEventIdsRef.current.add(eventId);
-          if (seenEventIdsRef.current.size > 10000) {
-            const iter = seenEventIdsRef.current.values();
-            for (let i = 0; i < 2000; i++) seenEventIdsRef.current.delete(iter.next().value);
-          }
-        }
-
-        const asOf = asOfMapRef.current.get(serviceName);
-        if (asOf && ts <= asOf) continue;
-
-        let bucket = incoming.get(serviceName);
-        if (!bucket) {
-          bucket = { metrics: [], http: [], errors: [], routes: null };
-          incoming.set(serviceName, bucket);
-        }
-
-        if (type === 'metrics' && payload) {
-          bucket.metrics.push({
-            ts,
-            cpuPercent: payload.cpuPercent ?? 0,
-            memRssMB: payload.memRssMB ?? 0,
-            heapUsedMB: payload.heapUsedMB ?? 0,
-            eventLoopLagMs: payload.eventLoopLagMs ?? 0,
-            uptimeSec: payload.uptimeSec ?? 0,
-          });
-        } else if (type === 'http' && payload) {
-          bucket.http.push({
-            ts,
-            requests: payload.requests ?? 0,
-            errors4xx: payload.errors4xx ?? 0,
-            errors5xx: payload.errors5xx ?? 0,
-            errorRate: (payload.errors4xx ?? 0) + (payload.errors5xx ?? 0),
-            latencyP50: payload.latencyP50 ?? 0,
-            latencyP95: payload.latencyP95 ?? 0,
-            latencyP99: payload.latencyP99 ?? 0,
-          });
-          if (payload.byRoute) {
-            bucket.routes = bucket.routes ? { ...bucket.routes, ...payload.byRoute } : { ...payload.byRoute };
-          }
-        } else if (type === 'error' && payload) {
-          bucket.errors.push({
-            id: eventId || `${ts}-${Math.random()}`,
-            ts,
-            message: payload.message || 'Unknown error',
-            stackHash: payload.stackHash || 'generic',
-            route: payload.route || 'unknown',
-            count: payload.count || 1,
-            stack: payload.stack || '',
-          });
+      if (eventId) {
+        if (seenEventIdsRef.current.has(eventId)) continue;
+        seenEventIdsRef.current.add(eventId);
+        if (seenEventIdsRef.current.size > 10000) {
+          const iter = seenEventIdsRef.current.values();
+          for (let i = 0; i < 2000; i++) seenEventIdsRef.current.delete(iter.next().value);
         }
       }
 
-      if (incoming.size === 0) return prevData;
+      const asOf = asOfMapRef.current.get(serviceName);
+      if (asOf && ts <= asOf) continue;
 
+      let bucket = incoming.get(serviceName);
+      if (!bucket) {
+        bucket = { metrics: [], http: [], errors: [], routes: null };
+        incoming.set(serviceName, bucket);
+      }
+
+      if (type === 'metrics' && payload) {
+        bucket.metrics.push({
+          ts,
+          cpuPercent: payload.cpuPercent ?? 0,
+          memRssMB: payload.memRssMB ?? 0,
+          heapUsedMB: payload.heapUsedMB ?? 0,
+          eventLoopLagMs: payload.eventLoopLagMs ?? 0,
+          uptimeSec: payload.uptimeSec ?? 0,
+        });
+      } else if (type === 'http' && payload) {
+        bucket.http.push({
+          ts,
+          requests: payload.requests ?? 0,
+          errors4xx: payload.errors4xx ?? 0,
+          errors5xx: payload.errors5xx ?? 0,
+          errorRate: (payload.errors4xx ?? 0) + (payload.errors5xx ?? 0),
+          latencyP50: payload.latencyP50 ?? 0,
+          latencyP95: payload.latencyP95 ?? 0,
+          latencyP99: payload.latencyP99 ?? 0,
+        });
+        if (payload.byRoute) {
+          bucket.routes = bucket.routes ? { ...bucket.routes, ...payload.byRoute } : { ...payload.byRoute };
+        }
+      } else if (type === 'error' && payload) {
+        bucket.errors.push({
+          id: eventId || `${ts}-${Math.random()}`,
+          ts,
+          message: payload.message || 'Unknown error',
+          stackHash: payload.stackHash || 'generic',
+          route: payload.route || 'unknown',
+          count: payload.count || 1,
+          stack: payload.stack || '',
+        });
+      }
+    }
+
+    if (incoming.size === 0) return;
+
+    // Pure updater: only merges `incoming` into previous state.
+    setTelemetryData((prevData) => {
       const updated = { ...prevData };
+
       for (const [serviceName, bucket] of incoming) {
         const changed = bucket.metrics.length || bucket.http.length || bucket.errors.length || bucket.routes;
         if (!changed) continue;
