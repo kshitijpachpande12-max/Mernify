@@ -356,17 +356,19 @@ export function useTelemetry({ projectId, token, selectedServices = [], timeRang
     const result = {};
     Object.keys(telemetryData).forEach((svc) => {
       const data = telemetryData[svc];
+      if (!data) return;
       result[svc] = {
         ...data,
-        metrics: data.metrics.filter((pt) => pt.ts <= replayTime),
-        http: data.http.filter((pt) => pt.ts <= replayTime),
+        metrics: data.metrics ? data.metrics.filter((pt) => pt.ts <= replayTime) : [],
+        http: data.http ? data.http.filter((pt) => pt.ts <= replayTime) : [],
+        errors: data.errors ? data.errors.filter((pt) => pt.ts <= replayTime) : [],
       };
     });
     return result;
   }, [telemetryData, isReplaying, replayTime]);
 
   return {
-    telemetryData: filteredData(),
+    telemetryData: isReplaying && replayTime !== null ? filteredData() : telemetryData,
     rawTelemetryData: telemetryData,
     alerts,
     serviceStatuses,

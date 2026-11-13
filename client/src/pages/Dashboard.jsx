@@ -82,7 +82,7 @@ export default function Dashboard() {
     });
   }, [activeTabService]);
 
-  // Calculate replay time timestamp based on slider position and available data
+  // Real-time telemetry ingestion and historical fetch
   const {
     telemetryData,
     rawTelemetryData,
@@ -97,26 +97,29 @@ export default function Dashboard() {
     selectedServices,
     timeRange,
     isReplaying,
-    replayTime: useMemo(() => {
-      if (!isReplaying) return null;
-      // Find min and max ts across selected services
-      let minTs = Infinity;
-      let maxTs = -Infinity;
-      selectedServices.forEach((svc) => {
-        const d = rawTelemetryData[svc];
-        if (d?.metrics?.length) {
-          minTs = Math.min(minTs, d.metrics[0].ts);
-          maxTs = Math.max(maxTs, d.metrics[d.metrics.length - 1].ts);
-        }
-        if (d?.http?.length) {
-          minTs = Math.min(minTs, d.http[0].ts);
-          maxTs = Math.max(maxTs, d.http[d.http.length - 1].ts);
-        }
-      });
-      if (minTs === Infinity || maxTs === -Infinity) return null;
-      return minTs + (maxTs - minTs) * (replaySliderValue / 100);
-    }, [isReplaying, replaySliderValue, rawTelemetryData, selectedServices]),
   });
+
+  // Calculate replay time timestamp based on slider position and available data
+  const replayTime = useMemo(() => {
+    if (!isReplaying) return null;
+    const sourceData = rawTelemetryData || telemetryData;
+    // Find min and max ts across selected services
+    let minTs = Infinity;
+    let maxTs = -Infinity;
+    selectedServices.forEach((svc) => {
+      const d = sourceData[svc];
+      if (d?.metrics?.length) {
+        minTs = Math.min(minTs, d.metrics[0].ts);
+        maxTs = Math.max(maxTs, d.metrics[d.metrics.length - 1].ts);
+      }
+      if (d?.http?.length) {
+        minTs = Math.min(minTs, d.http[0].ts);
+        maxTs = Math.max(maxTs, d.http[d.http.length - 1].ts);
+      }
+    });
+    if (minTs === Infinity || maxTs === -Infinity) return null;
+    return minTs + (maxTs - minTs) * (replaySliderValue / 100);
+  }, [isReplaying, replaySliderValue, telemetryData, rawTelemetryData, selectedServices]);
 
   // Auto-discover services from live incoming telemetry if services list was empty
   useEffect(() => {
@@ -149,7 +152,20 @@ export default function Dashboard() {
     }
   }, [telemetryData]);
 
-  const activeData = activeTabService ? telemetryData[activeTabService] : null;
+  // Active service telemetry data, filtered when scrubbing historical incident replay
+  const activeData = useMemo(() => {
+    if (!activeTabService || !telemetryData[activeTabService]) return null;
+    const raw = telemetryData[activeTabService];
+    if (!isReplaying || replayTime === null) {
+      return raw;
+    }
+    return {
+      ...raw,
+      metrics: raw.metrics ? raw.metrics.filter((pt) => pt.ts <= replayTime) : [],
+      http: raw.http ? raw.http.filter((pt) => pt.ts <= replayTime) : [],
+      errors: raw.errors ? raw.errors.filter((pt) => pt.ts <= replayTime) : [],
+    };
+  }, [activeTabService, telemetryData, isReplaying, replayTime]);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col pb-12">
