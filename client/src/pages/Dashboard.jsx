@@ -108,6 +108,10 @@ export default function Dashboard() {
           minTs = Math.min(minTs, d.metrics[0].ts);
           maxTs = Math.max(maxTs, d.metrics[d.metrics.length - 1].ts);
         }
+        if (d?.http?.length) {
+          minTs = Math.min(minTs, d.http[0].ts);
+          maxTs = Math.max(maxTs, d.http[d.http.length - 1].ts);
+        }
       });
       if (minTs === Infinity || maxTs === -Infinity) return null;
       return minTs + (maxTs - minTs) * (replaySliderValue / 100);
@@ -219,7 +223,9 @@ export default function Dashboard() {
               onChange={(e) => setReplaySliderValue(Number(e.target.value))}
               className="flex-1 h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
             />
-            <span className="font-mono text-amber-300 w-12 text-right">{replaySliderValue}%</span>
+            <span className="font-mono text-amber-300 text-xs">
+              {replaySliderValue}% {replayTime ? `(${new Date(replayTime).toLocaleTimeString()})` : ''}
+            </span>
           </div>
         )}
 

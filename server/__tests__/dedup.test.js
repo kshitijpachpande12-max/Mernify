@@ -127,4 +127,33 @@ describe('Dedup logic', () => {
       assert.equal(r2.duplicates, 2);
     });
   });
+
+  describe('ingestion service live dedup', () => {
+    const ingestion = require('../services/ingestion');
+
+    it('accurately counts and rejects duplicates in ingest()', async () => {
+      const project = { _id: 'proj_unit_test' };
+      const uniqueId = `unit-${Date.now()}`;
+      const e1 = {
+        eventId: `${uniqueId}-1`,
+        projectId: 'p',
+        serviceName: 'svc',
+        instanceId: 'inst',
+        seq: 1,
+        ts: Date.now(),
+        type: 'heartbeat',
+        payload: {},
+      };
+      const e2 = { ...e1, eventId: `${uniqueId}-2` };
+      const e1_dup = { ...e1 };
+
+      const r1 = await ingestion.ingest([e1, e2], project);
+      assert.equal(r1.accepted, 2);
+      assert.equal(r1.duplicates, 0);
+
+      const r2 = await ingestion.ingest([e1_dup], project);
+      assert.equal(r2.accepted, 0);
+      assert.equal(r2.duplicates, 1);
+    });
+  });
 });

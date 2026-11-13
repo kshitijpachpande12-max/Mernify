@@ -71,7 +71,7 @@ export function useTelemetry({ projectId, token, selectedServices = [], timeRang
 
       // Schedule RAF flush if not already scheduled
       if (!rafIdRef.current) {
-        rafIdRef.current = requestAnimationFrame(flushBuffer);
+        rafIdRef.current = requestAnimationFrame(() => flushBufferRef.current?.());
       }
     });
 
@@ -121,6 +121,14 @@ export function useTelemetry({ projectId, token, selectedServices = [], timeRang
     prevSelectedRef.current = selectedServices;
   }, [projectId, selectedServices]);
 
+  // Ref to always access latest selectedServices inside flushBuffer
+  const selectedServicesRef = useRef(selectedServices);
+  useEffect(() => {
+    selectedServicesRef.current = selectedServices;
+  }, [selectedServices]);
+
+  const flushBufferRef = useRef(null);
+
   // Flush buffer function using RAF
   const flushBuffer = useCallback(() => {
     rafIdRef.current = null;
@@ -131,12 +139,13 @@ export function useTelemetry({ projectId, token, selectedServices = [], timeRang
     setTelemetryData((prevData) => {
       let updated = { ...prevData };
       let changed = false;
+      const currentSelected = selectedServicesRef.current;
 
       for (const envelope of batch) {
         const { eventId, serviceName, ts, type, payload } = envelope;
 
         // Skip if not in selected services (unless none selected)
-        if (selectedServices.length > 0 && !selectedServices.includes(serviceName)) {
+        if (currentSelected && currentSelected.length > 0 && !currentSelected.includes(serviceName)) {
           continue;
         }
 
@@ -224,7 +233,9 @@ export function useTelemetry({ projectId, token, selectedServices = [], timeRang
 
       return changed ? updated : prevData;
     });
-  }, [selectedServices]);
+  }, []);
+
+  flushBufferRef.current = flushBuffer;
 
   // Load historical telemetry when timeRange changes or services change
   useEffect(() => {
@@ -246,7 +257,7 @@ export function useTelemetry({ projectId, token, selectedServices = [], timeRang
         const res = await fetch(
           `${API}/api/telemetry?projectId=${encodeURIComponent(projectId)}&service=${encodeURIComponent(
             service
-          )}&type=metrics&from=${from}&to=${now}&limit=1000`,
+          )}&from=${from}&to=${now}&limit=1000`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (!res.ok) return null;
@@ -266,28 +277,66 @@ export function useTelemetry({ projectId, token, selectedServices = [], timeRang
           if (!res) return;
           const serviceName = selectedServices[idx];
           const points = res.points || [];
-          const asOf = res.asOf || (points.length ? points[points.length - 1].ts : now);
-          asOfMapRef.current.set(serviceName, asOf);
 
-          const formattedPoints = points.map((p) => {
+          // Only set asOf cursor if historical points were actually returned
+          if (points.length > 0 && res.asOf) {
+            asOfMapRef.current.set(serviceName, res.asOf);
+          }
+
+          const histMetrics = [];
+          const histHttp = [];
+          const histErrors = [];
+          const histRoutes = {};
+
+          points.forEach((p) => {
             seenEventIdsRef.current.add(p.eventId || p.id || `${p.ts}`);
-            return {
-              ts: p.ts,
-              cpuPercent: p.payload?.cpuPercent ?? p.cpuPercent ?? 0,
-              memRssMB: p.payload?.memRssMB ?? p.memRssMB ?? 0,
-              heapUsedMB: p.payload?.heapUsedMB ?? p.heapUsedMB ?? 0,
-              eventLoopLagMs: p.payload?.eventLoopLagMs ?? p.eventLoopLagMs ?? 0,
-              uptimeSec: p.payload?.uptimeSec ?? p.uptimeSec ?? 0,
-            };
+            const pay = p.payload || {};
+
+            if (p.type === 'metrics' || pay.cpuPercent !== undefined) {
+              histMetrics.push({
+                ts: p.ts,
+                cpuPercent: pay.cpuPercent ?? p.cpuPercent ?? 0,
+                memRssMB: pay.memRssMB ?? p.memRssMB ?? 0,
+                heapUsedMB: pay.heapUsedMB ?? p.heapUsedMB ?? 0,
+                eventLoopLagMs: pay.eventLoopLagMs ?? p.eventLoopLagMs ?? 0,
+                uptimeSec: pay.uptimeSec ?? p.uptimeSec ?? 0,
+              });
+            } else if (p.type === 'http' || pay.requests !== undefined) {
+              histHttp.push({
+                ts: p.ts,
+                requests: pay.requests ?? 0,
+                errors4xx: pay.errors4xx ?? 0,
+                errors5xx: pay.errors5xx ?? 0,
+                errorRate: (pay.errors4xx ?? 0) + (pay.errors5xx ?? 0),
+                latencyP50: pay.latencyP50 ?? 0,
+                latencyP95: pay.latencyP95 ?? 0,
+                latencyP99: pay.latencyP99 ?? 0,
+              });
+              if (pay.byRoute) {
+                Object.assign(histRoutes, pay.byRoute);
+              }
+            } else if (p.type === 'error') {
+              histErrors.push({
+                id: p.eventId || `${p.ts}`,
+                ts: p.ts,
+                message: pay.message || 'Error',
+                stackHash: pay.stackHash || 'generic',
+                route: pay.route || 'unknown',
+                count: pay.count || 1,
+                stack: pay.stack || '',
+              });
+            }
           });
 
-          // Sort by ts, limit to MAX_POINTS
-          formattedPoints.sort((a, b) => a.ts - b.ts);
-          const sliced = formattedPoints.slice(-MAX_POINTS);
+          histMetrics.sort((a, b) => a.ts - b.ts);
+          histHttp.sort((a, b) => a.ts - b.ts);
 
+          const existing = next[serviceName] || { metrics: [], http: [], errors: [], byRoute: {} };
           next[serviceName] = {
-            ...(next[serviceName] || { http: [], errors: [], byRoute: {} }),
-            metrics: sliced,
+            metrics: histMetrics.length > 0 ? histMetrics.slice(-MAX_POINTS) : existing.metrics,
+            http: histHttp.length > 0 ? histHttp.slice(-MAX_POINTS) : existing.http,
+            errors: histErrors.length > 0 ? histErrors.slice(0, 99) : existing.errors,
+            byRoute: Object.keys(histRoutes).length > 0 ? { ...existing.byRoute, ...histRoutes } : existing.byRoute,
           };
         });
         return next;

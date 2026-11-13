@@ -47,6 +47,10 @@ let buffer = [];
 let flushInterval = null;
 let _onFlush = null;
 
+// Fast LRU Set for high-throughput in-memory deduplication
+const seenEventIds = new Set();
+const MAX_SEEN_IDS = 50000;
+
 async function ingest(events, project) {
   // Rate limit check
   if (!consumeTokens(String(project._id), events.length)) {
@@ -55,6 +59,7 @@ async function ingest(events, project) {
   }
 
   let accepted = 0;
+  let duplicates = 0;
   let rejected = 0;
 
   for (const raw of events) {
@@ -64,6 +69,18 @@ async function ingest(events, project) {
       continue;
     }
     const ev = result.data;
+
+    // Check duplicate eventId
+    if (seenEventIds.has(ev.eventId)) {
+      duplicates++;
+      continue;
+    }
+    seenEventIds.add(ev.eventId);
+    if (seenEventIds.size > MAX_SEEN_IDS) {
+      const first = seenEventIds.values().next().value;
+      seenEventIds.delete(first);
+    }
+
     trackSequence(ev);
 
     buffer.push({
@@ -86,6 +103,7 @@ async function ingest(events, project) {
   }
 
   if (rejected > 0) stats.recordReject(rejected);
+  if (duplicates > 0) stats.recordDuplicate(duplicates);
   if (accepted > 0) stats.recordEvents(accepted);
 
   // Flush if buffer large enough
@@ -93,7 +111,7 @@ async function ingest(events, project) {
     await flush();
   }
 
-  return { accepted, duplicates: 0, rejected };
+  return { accepted, duplicates, rejected };
 }
 
 async function flush() {

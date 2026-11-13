@@ -32,4 +32,12 @@ const telemetryEventSchema = new mongoose.Schema(
 
 telemetryEventSchema.index({ eventId: 1 }, { unique: true });
 
-module.exports = mongoose.model('TelemetryEvent', telemetryEventSchema);
+const TelemetryEvent = mongoose.model('TelemetryEvent', telemetryEventSchema);
+
+TelemetryEvent.on('index', (err) => {
+  if (err) {
+    console.warn('[db] TelemetryEvent index note (timeseries compatibility):', err.message);
+  }
+});
+
+module.exports = TelemetryEvent;

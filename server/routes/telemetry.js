@@ -71,7 +71,7 @@ router.get('/', async (req, res) => {
         payload: e.payload,
       }));
 
-      const asOf = points.length > 0 ? points[points.length - 1].ts : Date.now();
+      const asOf = points.length > 0 ? points[points.length - 1].ts : null;
       return res.json({ points, asOf });
     }
 
@@ -127,7 +127,7 @@ router.get('/', async (req, res) => {
       }
     }
 
-    const asOf = points.length > 0 ? points[points.length - 1].ts : Date.now();
+    const asOf = points.length > 0 ? points[points.length - 1].ts : null;
     res.json({ points, asOf });
   } catch (err) {
     res.status(500).json({ error: err.message });
