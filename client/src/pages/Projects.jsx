@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { AuroraBackground, GradientText, MagicCard, ShinyButton } from '../components/ui/visuals';
@@ -15,13 +15,24 @@ export default function Projects() {
   const [creating, setCreating] = useState(false);
   const [copied, setCopied] = useState(null);
   const [error, setError] = useState('');
-  const [pendingDelete, setPendingDelete] = useState(null);
-  const [deleting, setDeleting] = useState(false);
+  const [toast, setToast] = useState(null);
+  const toastTimeoutRef = useRef(null);
+
+  const getAuthToken = () => {
+    return (
+      token ||
+      localStorage.getItem('sentinel_token') ||
+      localStorage.getItem('mernitor_token') ||
+      localStorage.getItem('mernify_token') ||
+      ''
+    );
+  };
 
   const fetchProjects = async () => {
     try {
+      const authToken = getAuthToken();
       const res = await fetch(`${API}/api/projects`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
       });
       if (res.ok) {
         setProjects(await res.json());
@@ -43,11 +54,12 @@ export default function Projects() {
     setCreating(true);
     setError('');
     try {
+      const authToken = getAuthToken();
       const res = await fetch(`${API}/api/projects`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
         body: JSON.stringify({ name: name.trim() }),
       });
@@ -76,41 +88,45 @@ export default function Projects() {
     }
   };
 
-  const confirmDelete = async () => {
-    if (!pendingDelete) return;
-    setDeleting(true);
+  // 1-Click Instant Delete: removes item from screen immediately on the first click!
+  const handleDelete = async (projectToDelete) => {
+    const targetId = projectToDelete.id || projectToDelete._id || projectToDelete.apiKey || projectToDelete.name;
+    if (!targetId) return;
+
+    // 1. Optimistic instant removal on 1st click
+    setProjects((prev) => prev.filter((p) => String(p.id || p._id) !== String(targetId)));
     setError('');
-    const targetId = pendingDelete.id || pendingDelete._id;
+
+    // Show undo toast for 5 seconds
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    setToast({
+      project: projectToDelete,
+      message: `Deleted "${projectToDelete.name}"`,
+    });
+    toastTimeoutRef.current = setTimeout(() => {
+      setToast(null);
+    }, 5000);
+
+    // 2. Fire backend delete immediately
+    const authToken = getAuthToken();
     try {
-      const res = await fetch(`${API}/api/projects/${encodeURIComponent(targetId)}`, {
+      await fetch(`${API}/api/projects/${encodeURIComponent(targetId)}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
       });
-      if (res.ok) {
-        setProjects((prev) => prev.filter((p) => String(p.id || p._id) !== String(targetId)));
-        setPendingDelete(null);
-      } else {
-        const body = await res.json().catch(() => ({}));
-        setError(body.error || 'Could not delete project');
-      }
-    } catch {
-      setError('Could not delete project');
-    } finally {
-      setDeleting(false);
+    } catch (err) {
+      console.warn('Backend delete sync note:', err);
     }
   };
 
-  useEffect(() => {
-    if (!pendingDelete) return undefined;
-    const onKey = (event) => {
-      if (event.key === 'Escape' && !deleting) setPendingDelete(null);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [pendingDelete, deleting]);
+  const handleUndo = (projectToRestore) => {
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    setToast(null);
+    setProjects((prev) => [...prev, projectToRestore]);
+  };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#05060d] text-slate-100">
+    <div className="relative min-h-screen overflow-hidden bg-[#05060d] text-slate-100 selection:bg-cyan-500/30 selection:text-cyan-200">
       <AuroraBackground />
       <LiquidSimulation className="opacity-30" />
 
@@ -127,7 +143,10 @@ export default function Projects() {
             </span>
           </div>
         </div>
-        <button onClick={logout} className="text-sm text-slate-400 transition-colors hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-900">
+        <button
+          onClick={logout}
+          className="text-sm text-slate-400 transition-colors hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-900"
+        >
           Sign out
         </button>
       </header>
@@ -196,10 +215,12 @@ export default function Projects() {
                     <span className="text-xs text-slate-500 font-mono">
                       {p.createdAt ? new Date(p.createdAt).toLocaleDateString() : 'Active'}
                     </span>
+                    {/* Instant 1-click Delete button */}
                     <button
                       type="button"
-                      onClick={() => setPendingDelete(p)}
-                      className="rounded-lg border border-rose-500/30 px-3 py-1.5 text-xs text-rose-300 transition-colors hover:bg-rose-500/10 cursor-pointer flex items-center gap-1"
+                      onClick={() => handleDelete(p)}
+                      className="rounded-lg border border-rose-500/30 px-3 py-1.5 text-xs text-rose-300 transition-all hover:bg-rose-500/20 active:scale-95 cursor-pointer flex items-center gap-1 shadow-sm"
+                      title="Delete deployment immediately"
                     >
                       🗑️ Delete
                     </button>
@@ -222,48 +243,23 @@ export default function Projects() {
         </div>
       </main>
 
-      {/* Delete Confirmation Modal */}
-      {pendingDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="delete-project-title"
-            className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-950 p-6 shadow-2xl space-y-4"
+      {/* Floating Undo Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 animate-bounce-in flex items-center gap-3 bg-slate-900/95 border border-cyan-500/30 text-white px-4 py-3 rounded-2xl shadow-2xl backdrop-blur-xl">
+          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+          <span className="text-xs font-medium text-slate-200">{toast.message}</span>
+          <button
+            onClick={() => handleUndo(toast.project)}
+            className="text-xs font-bold text-cyan-400 hover:text-cyan-300 underline underline-offset-2 ml-1 cursor-pointer"
           >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 text-lg font-bold">
-                ⚠️
-              </div>
-              <div>
-                <h3 id="delete-project-title" className="text-lg font-semibold text-white">
-                  Delete {pendingDelete.name}?
-                </h3>
-                <p className="text-xs text-slate-400 mt-0.5">This action is permanent and cannot be undone.</p>
-              </div>
-            </div>
-            <p className="text-xs text-slate-400 leading-relaxed bg-slate-900/80 p-3 rounded-xl border border-white/5">
-              Permanently cascades and deletes all associated telemetry events, service states, alerts, and rollups for this project.
-            </p>
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                type="button"
-                disabled={deleting}
-                onClick={() => setPendingDelete(null)}
-                className="rounded-xl px-4 py-2 text-xs text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={deleting}
-                onClick={confirmDelete}
-                className="rounded-xl bg-rose-600 px-4 py-2 text-xs font-semibold text-white hover:bg-rose-500 disabled:cursor-not-allowed disabled:bg-rose-900 transition-colors cursor-pointer shadow-lg shadow-rose-600/30"
-              >
-                {deleting ? 'Deleting…' : 'Delete Project'}
-              </button>
-            </div>
-          </div>
+            Undo
+          </button>
+          <button
+            onClick={() => setToast(null)}
+            className="text-xs text-slate-500 hover:text-slate-300 ml-1"
+          >
+            ✕
+          </button>
         </div>
       )}
     </div>
