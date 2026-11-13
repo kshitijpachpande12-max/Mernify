@@ -3,6 +3,7 @@ import { io } from 'socket.io-client';
 
 const API = 'http://localhost:5000';
 const MAX_POINTS = 300;
+const FLUSH_MS = 200;
 
 export function useTelemetry({ projectId, token, selectedServices = [], timeRange = 'live', isReplaying = false, replayTime = null }) {
   // Service-keyed data maps
@@ -14,9 +15,9 @@ export function useTelemetry({ projectId, token, selectedServices = [], timeRang
   const [renderRate, setRenderRate] = useState(0);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
-  // Buffer ref for RAF
+  // Buffer ref. Flushed on a timer so charts do not repaint every frame.
   const bufferRef = useRef([]);
-  const rafIdRef = useRef(null);
+  const flushTimerRef = useRef(null);
   const seenEventIdsRef = useRef(new Set());
   const asOfMapRef = useRef(new Map()); // serviceName -> asOf ts
   const socketRef = useRef(null);
@@ -69,9 +70,11 @@ export function useTelemetry({ projectId, token, selectedServices = [], timeRang
 
       bufferRef.current.push(...batch);
 
-      // Schedule RAF flush if not already scheduled
-      if (!rafIdRef.current) {
-        rafIdRef.current = requestAnimationFrame(() => flushBufferRef.current?.());
+      if (!flushTimerRef.current) {
+        flushTimerRef.current = setTimeout(() => {
+          flushTimerRef.current = null;
+          flushBufferRef.current?.();
+        }, FLUSH_MS);
       }
     });
 
@@ -89,9 +92,9 @@ export function useTelemetry({ projectId, token, selectedServices = [], timeRang
     });
 
     return () => {
-      if (rafIdRef.current) {
-        cancelAnimationFrame(rafIdRef.current);
-        rafIdRef.current = null;
+      if (flushTimerRef.current) {
+        clearTimeout(flushTimerRef.current);
+        flushTimerRef.current = null;
       }
       socket.disconnect();
       socketRef.current = null;
@@ -129,73 +132,52 @@ export function useTelemetry({ projectId, token, selectedServices = [], timeRang
 
   const flushBufferRef = useRef(null);
 
-  // Flush buffer function using RAF
+  // Apply a buffered batch in one pass per service.
   const flushBuffer = useCallback(() => {
-    rafIdRef.current = null;
     const batch = bufferRef.current;
     if (batch.length === 0) return;
     bufferRef.current = [];
 
     setTelemetryData((prevData) => {
-      let updated = { ...prevData };
-      let changed = false;
+      const incoming = new Map();
       const currentSelected = selectedServicesRef.current;
 
       for (const envelope of batch) {
         const { eventId, serviceName, ts, type, payload } = envelope;
 
-        // Skip if not in selected services (unless none selected)
         if (currentSelected && currentSelected.length > 0 && !currentSelected.includes(serviceName)) {
           continue;
         }
 
-        // Deduplicate by eventId
         if (eventId) {
           if (seenEventIdsRef.current.has(eventId)) continue;
           seenEventIdsRef.current.add(eventId);
           if (seenEventIdsRef.current.size > 10000) {
-            // keep set reasonable
             const iter = seenEventIdsRef.current.values();
             for (let i = 0; i < 2000; i++) seenEventIdsRef.current.delete(iter.next().value);
           }
         }
 
-        // Check asOf cursor if historical data was loaded
         const asOf = asOfMapRef.current.get(serviceName);
-        if (asOf && ts <= asOf) {
-          continue;
-        }
+        if (asOf && ts <= asOf) continue;
 
-        changed = true;
-        if (!updated[serviceName]) {
-          updated[serviceName] = {
-            metrics: [],
-            http: [],
-            errors: [],
-            byRoute: {},
-          };
+        let bucket = incoming.get(serviceName);
+        if (!bucket) {
+          bucket = { metrics: [], http: [], errors: [], routes: null };
+          incoming.set(serviceName, bucket);
         }
-
-        const svc = { ...updated[serviceName] };
 
         if (type === 'metrics' && payload) {
-          const pt = {
+          bucket.metrics.push({
             ts,
             cpuPercent: payload.cpuPercent ?? 0,
             memRssMB: payload.memRssMB ?? 0,
             heapUsedMB: payload.heapUsedMB ?? 0,
             eventLoopLagMs: payload.eventLoopLagMs ?? 0,
             uptimeSec: payload.uptimeSec ?? 0,
-          };
-          // Insert and maintain sort by ts, sliding window MAX_POINTS
-          const nextMetrics = [...svc.metrics, pt];
-          if (nextMetrics.length > MAX_POINTS) {
-            svc.metrics = nextMetrics.slice(nextMetrics.length - MAX_POINTS);
-          } else {
-            svc.metrics = nextMetrics;
-          }
+          });
         } else if (type === 'http' && payload) {
-          const pt = {
+          bucket.http.push({
             ts,
             requests: payload.requests ?? 0,
             errors4xx: payload.errors4xx ?? 0,
@@ -204,19 +186,12 @@ export function useTelemetry({ projectId, token, selectedServices = [], timeRang
             latencyP50: payload.latencyP50 ?? 0,
             latencyP95: payload.latencyP95 ?? 0,
             latencyP99: payload.latencyP99 ?? 0,
-          };
-          const nextHttp = [...svc.http, pt];
-          if (nextHttp.length > MAX_POINTS) {
-            svc.http = nextHttp.slice(nextHttp.length - MAX_POINTS);
-          } else {
-            svc.http = nextHttp;
-          }
-
+          });
           if (payload.byRoute) {
-            svc.byRoute = { ...svc.byRoute, ...payload.byRoute };
+            bucket.routes = bucket.routes ? { ...bucket.routes, ...payload.byRoute } : { ...payload.byRoute };
           }
         } else if (type === 'error' && payload) {
-          const errItem = {
+          bucket.errors.push({
             id: eventId || `${ts}-${Math.random()}`,
             ts,
             message: payload.message || 'Unknown error',
@@ -224,14 +199,42 @@ export function useTelemetry({ projectId, token, selectedServices = [], timeRang
             route: payload.route || 'unknown',
             count: payload.count || 1,
             stack: payload.stack || '',
-          };
-          svc.errors = [errItem, ...svc.errors.slice(0, 99)];
+          });
         }
-
-        updated[serviceName] = svc;
       }
 
-      return changed ? updated : prevData;
+      if (incoming.size === 0) return prevData;
+
+      const updated = { ...prevData };
+      for (const [serviceName, bucket] of incoming) {
+        const changed = bucket.metrics.length || bucket.http.length || bucket.errors.length || bucket.routes;
+        if (!changed) continue;
+
+        const prev = updated[serviceName] || { metrics: [], http: [], errors: [], byRoute: {} };
+        let metrics = prev.metrics;
+        let http = prev.http;
+        let errors = prev.errors;
+        let byRoute = prev.byRoute;
+
+        if (bucket.metrics.length) {
+          metrics = prev.metrics.concat(bucket.metrics);
+          if (metrics.length > MAX_POINTS) metrics = metrics.slice(metrics.length - MAX_POINTS);
+        }
+        if (bucket.http.length) {
+          http = prev.http.concat(bucket.http);
+          if (http.length > MAX_POINTS) http = http.slice(http.length - MAX_POINTS);
+        }
+        if (bucket.errors.length) {
+          errors = bucket.errors.concat(prev.errors).slice(0, 100);
+        }
+        if (bucket.routes) {
+          byRoute = { ...prev.byRoute, ...bucket.routes };
+        }
+
+        updated[serviceName] = { metrics, http, errors, byRoute };
+      }
+
+      return updated;
     });
   }, []);
 

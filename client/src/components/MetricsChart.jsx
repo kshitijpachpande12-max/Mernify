@@ -1,107 +1,45 @@
 import React, { useMemo, memo } from 'react';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-} from 'recharts';
-
-function formatTime(ts) {
-  if (!ts) return '';
-  const d = new Date(ts);
-  return d.toTimeString().split(' ')[0];
-}
+import { LineChart, Line, XAxis, YAxis, Tooltip, Legend } from 'recharts';
+import { Panel } from './ui/visuals';
+import { ChartFrame, axisTick, downsample, formatTime, lineProps, tooltipStyle } from './charts/chartUtils';
 
 const MetricsChart = memo(function MetricsChart({ serviceName, data = [] }) {
-  const chartData = useMemo(() => {
-    return data.map((d) => ({
-      time: formatTime(d.ts),
-      ts: d.ts,
-      cpuPercent: Number(d.cpuPercent?.toFixed?.(1) ?? d.cpuPercent),
-      memRssMB: Math.round(d.memRssMB ?? 0),
-      heapUsedMB: Math.round(d.heapUsedMB ?? 0),
-      eventLoopLagMs: Number(d.eventLoopLagMs?.toFixed?.(1) ?? d.eventLoopLagMs),
-    }));
-  }, [data]);
+  const chartData = useMemo(
+    () =>
+      downsample(data).map((d) => ({
+        time: formatTime(d.ts),
+        cpuPercent: Number(d.cpuPercent?.toFixed?.(1) ?? d.cpuPercent),
+        memRssMB: Math.round(d.memRssMB ?? 0),
+        heapUsedMB: Math.round(d.heapUsedMB ?? 0),
+        eventLoopLagMs: Number(d.eventLoopLagMs?.toFixed?.(1) ?? d.eventLoopLagMs),
+      })),
+    [data]
+  );
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="font-semibold text-white text-sm">
-          System Metrics — <span className="font-mono text-cyan-400">{serviceName}</span>
+    <Panel className="p-4">
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-white">
+          System Metrics — <span className="font-mono text-cyan-300">{serviceName}</span>
         </h3>
-        <span className="text-xs text-slate-500">{chartData.length} pts</span>
+        <span className="text-xs text-slate-500">{data.length} pts</span>
       </div>
-
-      <div className="h-64 w-full">
-        {chartData.length === 0 ? (
-          <div className="h-full flex items-center justify-center text-slate-500 text-xs">
-            Awaiting metric samples…
-          </div>
-        ) : (
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-              <XAxis dataKey="time" stroke="#475569" tick={{ fill: '#64748b', fontSize: 10 }} />
-              <YAxis yAxisId="left" stroke="#475569" tick={{ fill: '#64748b', fontSize: 10 }} />
-              <YAxis yAxisId="right" orientation="right" stroke="#475569" tick={{ fill: '#64748b', fontSize: 10 }} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: '#0f172a',
-                  borderColor: '#1e293b',
-                  borderRadius: '0.5rem',
-                  fontSize: '12px',
-                }}
-              />
-              <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '6px' }} />
-              <Line
-                yAxisId="left"
-                type="monotone"
-                dataKey="cpuPercent"
-                name="CPU (%)"
-                stroke="#06b6d4"
-                strokeWidth={1.5}
-                dot={false}
-                isAnimationActive={false}
-              />
-              <Line
-                yAxisId="right"
-                type="monotone"
-                dataKey="memRssMB"
-                name="RSS (MB)"
-                stroke="#8b5cf6"
-                strokeWidth={1.5}
-                dot={false}
-                isAnimationActive={false}
-              />
-              <Line
-                yAxisId="right"
-                type="monotone"
-                dataKey="heapUsedMB"
-                name="Heap (MB)"
-                stroke="#ec4899"
-                strokeWidth={1}
-                strokeDasharray="3 3"
-                dot={false}
-                isAnimationActive={false}
-              />
-              <Line
-                yAxisId="left"
-                type="monotone"
-                dataKey="eventLoopLagMs"
-                name="Lag (ms)"
-                stroke="#eab308"
-                strokeWidth={1}
-                dot={false}
-                isAnimationActive={false}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+      <ChartFrame empty={chartData.length === 0 ? 'Awaiting metric samples…' : null}>
+        {(width, height) => (
+          <LineChart width={width} height={height} data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+            <XAxis dataKey="time" stroke="#475569" tick={axisTick} minTickGap={28} />
+            <YAxis yAxisId="left" stroke="#475569" tick={axisTick} />
+            <YAxis yAxisId="right" orientation="right" stroke="#475569" tick={axisTick} />
+            <Tooltip contentStyle={tooltipStyle} isAnimationActive={false} />
+            <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '6px' }} />
+            <Line yAxisId="left" dataKey="cpuPercent" name="CPU (%)" stroke="#22d3ee" strokeWidth={1.5} {...lineProps} />
+            <Line yAxisId="right" dataKey="memRssMB" name="RSS (MB)" stroke="#a78bfa" strokeWidth={1.5} {...lineProps} />
+            <Line yAxisId="right" dataKey="heapUsedMB" name="Heap (MB)" stroke="#f472b6" strokeWidth={1} strokeDasharray="3 3" {...lineProps} />
+            <Line yAxisId="left" dataKey="eventLoopLagMs" name="Lag (ms)" stroke="#facc15" strokeWidth={1} {...lineProps} />
+          </LineChart>
         )}
-      </div>
-    </div>
+      </ChartFrame>
+    </Panel>
   );
 });
 

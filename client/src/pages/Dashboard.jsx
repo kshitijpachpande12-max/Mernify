@@ -10,6 +10,7 @@ import AlertsPanel from '../components/AlertsPanel';
 import RouteTable from '../components/RouteTable';
 import ErrorGroups from '../components/ErrorGroups';
 import DebugFooter from '../components/DebugFooter';
+import { GradientText } from '../components/ui/visuals';
 
 const API = 'http://localhost:5000';
 
@@ -168,9 +169,9 @@ export default function Dashboard() {
   }, [activeTabService, telemetryData, isReplaying, replayTime]);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col pb-12">
+    <div className="min-h-screen bg-[#05060d] text-slate-100 flex flex-col pb-12">
       {/* Top Navbar */}
-      <header className="bg-slate-900 border-b border-slate-800 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-40">
+      <header className="bg-slate-950/80 border-b border-white/10 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-40 backdrop-blur">
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate('/projects')}
@@ -180,7 +181,8 @@ export default function Dashboard() {
           </button>
           <div className="h-4 w-px bg-slate-800" />
           <h1 className="font-bold text-white text-base tracking-tight">
-            Mernitor Telemetry — <span className="font-mono text-cyan-400 text-sm">{projectId}</span>
+            <GradientText>Mernitor</GradientText>
+            <span className="font-mono text-cyan-300 text-sm"> {projectId}</span>
           </h1>
         </div>
 
