@@ -71,7 +71,7 @@ export default function Projects() {
     <div className="min-h-screen bg-slate-950">
       {/* Header */}
       <header className="bg-slate-900 border-b border-slate-800 px-6 py-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-white">Mernify</h1>
+        <h1 className="text-xl font-bold text-white">Mernitor</h1>
         <button onClick={logout} className="text-sm text-slate-400 hover:text-white transition-colors">
           Sign out
         </button>

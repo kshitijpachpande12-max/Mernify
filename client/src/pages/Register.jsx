@@ -28,7 +28,7 @@ export default function Register() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4">
       <div className="w-full max-w-md bg-slate-900 rounded-2xl p-8 shadow-xl border border-slate-800">
-        <h1 className="text-3xl font-bold text-center mb-2 text-white">Mernify</h1>
+        <h1 className="text-3xl font-bold text-center mb-2 text-white">Mernitor</h1>
         <p className="text-slate-400 text-center mb-8">Create your account</p>
 
         {error && (

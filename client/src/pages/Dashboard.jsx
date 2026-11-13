@@ -129,7 +129,7 @@ export default function Dashboard() {
           </button>
           <div className="h-4 w-px bg-slate-800" />
           <h1 className="font-bold text-white text-base tracking-tight">
-            Mernify Telemetry — <span className="font-mono text-cyan-400 text-sm">{projectId}</span>
+            Mernitor Telemetry — <span className="font-mono text-cyan-400 text-sm">{projectId}</span>
           </h1>
         </div>
 
