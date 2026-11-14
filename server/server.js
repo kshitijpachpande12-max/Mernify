@@ -26,7 +26,36 @@ const statsRoutes = require('./routes/stats');
 
 // ── Express app ──────────────────────────────────────────────
 const app = express();
-app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
+
+// Ensure MongoDB is connected (critical for Vercel serverless cold starts)
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+  } catch (err) {
+    console.error('[db] connection error in middleware:', err.message);
+  }
+  next();
+});
+
+// Permissive CORS for local dev + Vercel frontend domains
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, curl, server-to-server)
+      if (!origin) return callback(null, true);
+      // Allow localhost or any vercel.app deployment preview / production domain
+      if (
+        origin.includes('localhost') ||
+        origin.endsWith('.vercel.app') ||
+        (process.env.CLIENT_URL && origin === process.env.CLIENT_URL)
+      ) {
+        return callback(null, true);
+      }
+      return callback(null, true);
+    },
+    credentials: true,
+  })
+);
 app.use(express.json({ limit: '5mb' }));
 
 // Mount routes
@@ -107,12 +136,18 @@ async function shutdown(signal) {
   setTimeout(() => process.exit(1), 5000);
 }
 
-process.on('SIGINT', () => shutdown('SIGINT'));
-process.on('SIGTERM', () => shutdown('SIGTERM'));
+// ── Start (only in standalone server mode, not when loaded as Vercel serverless function) ──
+if (!process.env.VERCEL) {
+  process.on('SIGINT', () => shutdown('SIGINT'));
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
 
-start().catch((err) => {
-  console.error('[server] Failed to start:', err);
-  process.exit(1);
-});
+  start().catch((err) => {
+    console.error('[server] Failed to start:', err);
+    process.exit(1);
+  });
+}
 
-module.exports = { app, server, io };
+module.exports = app;
+module.exports.app = app;
+module.exports.server = server;
+module.exports.io = io;

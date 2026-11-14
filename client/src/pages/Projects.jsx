@@ -5,7 +5,7 @@ import { MagicCard, ShinyButton, AnimatedGradientText } from '../components/magi
 import { CanvasCrowd, KineticMenu } from '../components/skipper';
 import { AuroraBackground } from '../components/ui/visuals';
 
-const API = 'http://localhost:5000';
+const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export default function Projects() {
   const { token, logout } = useAuth();
