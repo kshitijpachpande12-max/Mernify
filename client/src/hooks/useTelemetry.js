@@ -189,8 +189,11 @@ export function useTelemetry({
         }
       }
 
+      const tsNum = typeof ts === 'number' ? ts : new Date(ts).getTime();
       const asOf = asOfMapRef.current.get(serviceName);
-      if (asOf && ts <= asOf) continue;
+      const asOfNum = asOf ? (typeof asOf === 'number' ? asOf : new Date(asOf).getTime()) : 0;
+      if (asOfNum > 0 && tsNum <= asOfNum) continue;
+      asOfMapRef.current.set(serviceName, tsNum);
 
       let bucket = incoming.get(serviceName);
       if (!bucket) {
@@ -200,7 +203,7 @@ export function useTelemetry({
 
       if (type === 'metrics' && payload) {
         bucket.metrics.push({
-          ts,
+          ts: tsNum,
           cpuPercent: payload.cpuPercent ?? 0,
           memRssMB: payload.memRssMB ?? 0,
           heapUsedMB: payload.heapUsedMB ?? 0,
@@ -209,7 +212,7 @@ export function useTelemetry({
         });
       } else if (type === 'http' && payload) {
         bucket.http.push({
-          ts,
+          ts: tsNum,
           requests: payload.requests ?? 0,
           errors4xx: payload.errors4xx ?? 0,
           errors5xx: payload.errors5xx ?? 0,
@@ -223,8 +226,8 @@ export function useTelemetry({
         }
       } else if (type === 'error' && payload) {
         bucket.errors.push({
-          id: eventId || `${ts}-${Math.random()}`,
-          ts,
+          id: eventId || `${tsNum}-${Math.random()}`,
+          ts: tsNum,
           message: payload.message || 'Unknown error',
           stackHash: payload.stackHash || 'generic',
           route: payload.route || 'unknown',
@@ -476,6 +479,101 @@ export function useTelemetry({
       isCancelled = true;
     };
   }, [projectId, token, timeRange, selectedServices]);
+
+  // Live polling loop (essential for Vercel / serverless deployments where WebSockets cannot persist across lambdas)
+  useEffect(() => {
+    if (!token || !projectId || selectedServices.length === 0 || isReplaying || timeRange !== 'live') {
+      return;
+    }
+
+    let isCancelled = false;
+
+    const pollLatest = async () => {
+      const now = Date.now();
+      const from = now - 20000; // query last 20 seconds of incoming metrics
+
+      try {
+        await Promise.all(
+          selectedServices.map(async (serviceName) => {
+            const res = await fetch(
+              `${API}/api/telemetry?projectId=${encodeURIComponent(projectId)}&service=${encodeURIComponent(
+                serviceName
+              )}&from=${from}&to=${now}&limit=60`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+            if (!res.ok) return;
+            const data = await res.json();
+            const points = data.points || [];
+            if (points.length === 0 || isCancelled) return;
+
+            const newPoints = [];
+            for (const p of points) {
+              const id = p.eventId || p.id || `${p.ts}-${p.seq}`;
+              if (!seenEventIdsRef.current.has(id)) {
+                seenEventIdsRef.current.add(id);
+                newPoints.push({
+                  serviceName,
+                  type: p.type,
+                  payload: p.payload || p,
+                  ts: typeof p.ts === 'string' ? new Date(p.ts).getTime() : p.ts,
+                });
+              }
+            }
+
+            if (newPoints.length > 0) {
+              eventCounterRef.current += newPoints.length;
+              lastSeenMapRef.current.set(serviceName, now);
+              bufferRef.current.push(...newPoints);
+              if (!flushTimerRef.current) {
+                flushTimerRef.current = setTimeout(() => {
+                  flushTimerRef.current = null;
+                  flushBufferRef.current?.();
+                }, FLUSH_MS);
+              }
+            }
+          })
+        );
+      } catch {
+        // ignore network error
+      }
+    };
+
+    // Poll every 1.5 seconds for smooth real-time chart animation
+    const interval = setInterval(pollLatest, 1500);
+    return () => {
+      isCancelled = true;
+      clearInterval(interval);
+    };
+  }, [projectId, token, selectedServices, isReplaying, timeRange]);
+
+  // Periodic alerts poll (ensures new alerts appear even without persistent sockets on Vercel)
+  useEffect(() => {
+    if (!token || !projectId) return;
+    let isCancelled = false;
+
+    const fetchAlerts = async () => {
+      try {
+        const res = await fetch(`${API}/api/alerts?projectId=${encodeURIComponent(projectId)}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const list = await res.json();
+          if (!isCancelled && Array.isArray(list)) {
+            setAlerts(list.slice(0, 100));
+          }
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    fetchAlerts();
+    const interval = setInterval(fetchAlerts, 4000);
+    return () => {
+      isCancelled = true;
+      clearInterval(interval);
+    };
+  }, [projectId, token]);
 
   const clearAlerts = useCallback(async () => {
     setAlerts([]);
