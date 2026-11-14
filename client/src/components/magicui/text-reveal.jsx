@@ -1,14 +1,13 @@
 /**
  * TextReveal / TextRevealCard — Magic UI (https://magicui.design/docs/components/text-reveal)
- * Animated text reveal component with motion unmasking.
- * Adapted from official Magic UI source (MIT License).
+ * Animated text reveal component with sliding curtain unmasking.
+ * Zero external dependency implementation.
  */
-import React from "react";
-import { motion } from "framer-motion";
+import React, { useState, useEffect } from "react";
 import { cn } from "../../lib/utils";
 
 export function TextRevealCard({
-  text = "Engineered for sub-millisecond telemetry ingestion and automated anomaly detection.",
+  text = "Engineered for sub-millisecond telemetry ingestion, automated Z-score anomaly detection, and timeline incident replay across distributed microservices.",
   title = "✦ AUTONOMOUS CLOUD TELEMETRY",
   highlights = [
     "100k+ ev/sec Ingest",
@@ -18,6 +17,13 @@ export function TextRevealCard({
   ],
   className,
 }) {
+  const [revealed, setRevealed] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setRevealed(true), 250);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <div
       className={cn(
@@ -25,12 +31,12 @@ export function TextRevealCard({
         className
       )}
     >
-      {/* Sliding Accent Reveal Curtain using Framer Motion */}
-      <motion.div
-        className="absolute inset-0 bg-gradient-to-r from-zinc-800 via-zinc-400 to-white z-20 pointer-events-none"
-        initial={{ x: "0%", opacity: 1 }}
-        animate={{ x: "105%", opacity: 0 }}
-        transition={{ duration: 0.9, ease: [0.77, 0, 0.175, 1], delay: 0.2 }}
+      {/* Sliding Accent Reveal Curtain */}
+      <div
+        className={cn(
+          "absolute inset-0 bg-gradient-to-r from-zinc-800 via-zinc-400 to-white z-20 pointer-events-none transition-all duration-1000 ease-out",
+          revealed ? "translate-x-full opacity-0" : "translate-x-0 opacity-100"
+        )}
       />
 
       {/* Decorative top shimmer bar */}
@@ -47,14 +53,14 @@ export function TextRevealCard({
       )}
 
       {/* Content */}
-      <motion.p
-        className="text-zinc-300 text-sm sm:text-base leading-relaxed font-normal"
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.4 }}
+      <p
+        className={cn(
+          "text-zinc-300 text-sm sm:text-base leading-relaxed font-normal transition-all duration-700",
+          revealed ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+        )}
       >
         {text}
-      </motion.p>
+      </p>
 
       {/* Highlights Grid */}
       {highlights && highlights.length > 0 && (

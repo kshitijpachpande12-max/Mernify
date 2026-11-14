@@ -1,80 +1,52 @@
 /**
  * MagicCard — Magic UI (https://magicui.design/docs/components/magic-card)
  * A spotlight card with mouse-tracking gradient overlay.
- * Adapted from the official Magic UI source (MIT License).
+ * Zero external dependency implementation.
  */
-import React, { useCallback, useEffect, useRef } from "react";
-import { motion, useMotionTemplate, useMotionValue } from "framer-motion";
+import React, { useRef } from "react";
 import { cn } from "../../lib/utils";
 
 export function MagicCard({
   children,
   className,
-  gradientSize = 200,
-  gradientColor = "#262626",
+  gradientSize = 250,
+  gradientColor = "rgba(255, 255, 255, 0.08)",
   gradientOpacity = 0.8,
   ...props
 }) {
   const cardRef = useRef(null);
-  const mouseX = useMotionValue(-gradientSize);
-  const mouseY = useMotionValue(-gradientSize);
 
-  const handleMouseMove = useCallback(
-    (e) => {
-      if (!cardRef.current) return;
-      const rect = cardRef.current.getBoundingClientRect();
-      mouseX.set(e.clientX - rect.left);
-      mouseY.set(e.clientY - rect.top);
-    },
-    [mouseX, mouseY]
-  );
-
-  const handleMouseOut = useCallback(
-    (e) => {
-      if (!cardRef.current) return;
-      const rect = cardRef.current.getBoundingClientRect();
-      if (
-        e.clientX < rect.left ||
-        e.clientX > rect.right ||
-        e.clientY < rect.top ||
-        e.clientY > rect.bottom
-      ) {
-        mouseX.set(-gradientSize);
-        mouseY.set(-gradientSize);
-      }
-    },
-    [mouseX, mouseY, gradientSize]
-  );
-
-  useEffect(() => {
+  const handleMouseMove = (e) => {
     const el = cardRef.current;
     if (!el) return;
-    el.addEventListener("mousemove", handleMouseMove);
-    el.addEventListener("mouseout", handleMouseOut);
-    return () => {
-      el.removeEventListener("mousemove", handleMouseMove);
-      el.removeEventListener("mouseout", handleMouseOut);
-    };
-  }, [handleMouseMove, handleMouseOut]);
-
-  const background = useMotionTemplate`
-    radial-gradient(${gradientSize}px circle at ${mouseX}px ${mouseY}px, ${gradientColor}, transparent 100%)
-  `;
+    const rect = el.getBoundingClientRect();
+    el.style.setProperty("--mx", `${e.clientX - rect.left}px`);
+    el.style.setProperty("--my", `${e.clientY - rect.top}px`);
+  };
 
   return (
     <div
       ref={cardRef}
+      onMouseMove={handleMouseMove}
       className={cn(
-        "group relative flex size-full overflow-hidden rounded-2xl border border-zinc-800/80 bg-[#121215] text-white shadow-2xl shadow-black/50 backdrop-blur-xl",
+        "magic-card group relative flex size-full overflow-hidden rounded-2xl border border-zinc-800/80 bg-[#121215] text-white shadow-2xl shadow-black/50 backdrop-blur-xl transition-all duration-300",
         className
       )}
+      style={{
+        "--gradient-size": `${gradientSize}px`,
+        "--gradient-color": gradientColor,
+      }}
       {...props}
     >
-      <div className="relative z-10 size-full">{children}</div>
-      <motion.div
+      {/* Background Spotlight Glow */}
+      <div
         className="pointer-events-none absolute -inset-px rounded-[inherit] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-        style={{ background, opacity: gradientOpacity }}
+        style={{
+          background: `radial-gradient(var(--gradient-size, 250px) circle at var(--mx, -500px) var(--my, -500px), var(--gradient-color, rgba(255, 255, 255, 0.08)), transparent 80%)`,
+        }}
+        aria-hidden="true"
       />
+      <div className="relative z-10 size-full">{children}</div>
     </div>
   );
 }
