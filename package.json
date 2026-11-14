@@ -1,0 +1,26 @@
+{
+  "name": "sentinel-telemetry-agent",
+  "version": "1.0.0",
+  "description": "Lightweight telemetry agent for Node.js apps — sends metrics, latency & errors to Sentinel",
+  "main": "agent/index.js",
+  "scripts": {
+    "test": "node --test agent/__tests__/*.test.js"
+  },
+  "dependencies": {
+    "socket.io-client": "^4.7.5",
+    "ulid": "^2.3.0"
+  },
+  "keywords": [
+    "sentinel",
+    "telemetry",
+    "monitoring",
+    "metrics",
+    "apm",
+    "observability"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kshitijpachpande12-max/Sentinel.git"
+  }
+}

@@ -48,9 +48,13 @@ Anyone can instrument their existing Node.js / Express backend with Sentinel in 
 
 You can install the Sentinel telemetry agent into any existing Node.js project using any of these methods:
 
-#### Option A: Direct from Git (No npm registry needed)
+#### Option A: Direct from Git (Instant 1-step install, no npm publishing needed!)
 ```bash
-npm install github:kshitijpachpande12-max/Sentinel#main:agent
+npm install github:kshitijpachpande12-max/Sentinel
+```
+*(or using the Mernify repository name)*:
+```bash
+npm install github:kshitijpachpande12-max/Mernify
 ```
 
 #### Option B: Local Folder Copy
