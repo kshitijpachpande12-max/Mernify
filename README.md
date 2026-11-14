@@ -44,8 +44,22 @@ Anyone can instrument their existing Node.js / Express backend with Sentinel in 
 2. Select or create your project on the **Projects** page.
 3. Copy your **API Key** from the project card, and copy your **Project ID** from the dashboard URL (`https://sentinel-i6lk.vercel.app/dashboard/<PROJECT_ID>`).
 
-### 2. Copy the Agent into Your Project
-Copy the lightweight `agent/` folder from this repository into your Node.js application directory (or install it via npm/git).
+### 2. Install the Agent
+
+You can install the Sentinel telemetry agent into any existing Node.js project using any of these methods:
+
+#### Option A: Direct from Git (No npm registry needed)
+```bash
+npm install github:kshitijpachpande12-max/Sentinel#main:agent
+```
+
+#### Option B: From npm (Public package)
+```bash
+npm install sentinel-telemetry-agent
+```
+
+#### Option C: Local Folder Copy
+Simply copy the lightweight `agent/` folder from this repo into your project.
 
 ### 3. Initialize in Your Express Application
 Add Sentinel to your existing service's entry point (e.g. `index.js`, `server.js`, or `app.js`). Your existing routes, database, and ports stay completely untouched:
@@ -55,8 +69,9 @@ Add Sentinel to your existing service's entry point (e.g. `index.js`, `server.js
 const express = require('express');
 const app = express();
 
-// 1. Import Sentinel (does not replace your server)
-const sentinel = require('./agent'); 
+// 1. Import Sentinel (use 'sentinel-telemetry-agent' if installed via npm/git, or './agent' if local)
+const sentinel = require('sentinel-telemetry-agent'); 
+// const sentinel = require('./agent'); // if copied locally 
 
 // 2. Initialize with your Sentinel project credentials
 sentinel.init({
