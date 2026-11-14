@@ -2,8 +2,7 @@
 
 /**
  * Express middleware factory.
- * Aggregates HTTP traffic into 1-second windows and emits a single
- * "http" envelope per window.
+ * Aggregates HTTP traffic into windows or immediate serverless flushes.
  */
 function createMiddleware(agent) {
   const WINDOW_MS = 1000;
@@ -58,32 +57,35 @@ function createMiddleware(agent) {
       byRoute,
     };
 
-    agent.addToBuffer(agent.createEnvelope('http', payload));
+    if (agent && typeof agent.addToBuffer === 'function' && typeof agent.createEnvelope === 'function') {
+      agent.addToBuffer(agent.createEnvelope('http', payload));
+    }
   }
 
-  // Start the 1-second window flush timer
-  windowTimer = setInterval(() => {
-    try {
-      flushWindow();
-    } catch (_) {
-      /* never crash host */
-    }
-  }, WINDOW_MS);
+  // Only start recurring interval timer if not in pure serverless mode (where intervals freeze)
+  if (!agent || !agent.isServerless) {
+    windowTimer = setInterval(() => {
+      try {
+        flushWindow();
+      } catch (_) {
+        /* never crash host */
+      }
+    }, WINDOW_MS);
 
-  // Don't prevent the process from exiting
-  if (windowTimer && windowTimer.unref) {
-    windowTimer.unref();
+    if (windowTimer && windowTimer.unref) {
+      windowTimer.unref();
+    }
   }
 
   // The actual Express middleware
-  return function mernifyMiddleware(req, res, next) {
+  return function sentinelMiddleware(req, res, next) {
     const start = Date.now();
 
     res.on('finish', () => {
       try {
         const duration = Date.now() - start;
         const status = res.statusCode;
-        const route = (req.route && req.route.path) || req.path || '/';
+        const route = (req.route && req.route.path) || req.baseUrl || req.path || '/';
         const routeKey = req.method + ' ' + route;
 
         window.requests++;
@@ -99,6 +101,23 @@ function createMiddleware(agent) {
         r.count++;
         r.latencies.push(duration);
         if (status >= 400) r.errors++;
+
+        // SERVERLESS RESILIENCE:
+        // In serverless environments (e.g. Vercel, AWS Lambda), execution freezes immediately
+        // after response delivery. We must flush the window, collect metrics, emit a heartbeat,
+        // and trigger flushBuffer() before the lambda freezes!
+        if (agent && agent.isServerless) {
+          flushWindow();
+          if (typeof agent.collectMetrics === 'function') {
+            agent.collectMetrics();
+          }
+          if (typeof agent.sendHeartbeat === 'function') {
+            agent.sendHeartbeat();
+          }
+          if (typeof agent.flushBuffer === 'function') {
+            agent.flushBuffer();
+          }
+        }
       } catch (_) {
         /* never crash host */
       }

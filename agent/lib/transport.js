@@ -3,6 +3,9 @@
 const http = require('http');
 const https = require('https');
 
+const httpAgent = new http.Agent({ keepAlive: true, timeout: 3000 });
+const httpsAgent = new https.Agent({ keepAlive: true, timeout: 3000 });
+
 let io;
 try {
   io = require('socket.io-client').io;
@@ -15,19 +18,26 @@ try {
 }
 
 /**
- * HTTP REST Ingestion Helper (Fallback for Vercel & serverless environments)
+ * HTTP REST Ingestion Helper (Optimized for Vercel & serverless environments)
  */
 function postHttp(serverUrl, apiKey, events) {
   return new Promise((resolve) => {
     try {
+      if (!serverUrl || !apiKey || !events || events.length === 0) {
+        return resolve({ accepted: 0, duplicates: 0, rejected: 0 });
+      }
+
       const url = new URL(serverUrl.replace(/\/$/, '') + '/api/ingest');
       const payload = JSON.stringify({ events });
       const client = url.protocol === 'https:' ? https : http;
+      const agent = url.protocol === 'https:' ? httpsAgent : httpAgent;
 
       const req = client.request(
         url,
         {
           method: 'POST',
+          agent,
+          timeout: 2500,
           headers: {
             'Content-Type': 'application/json',
             'Content-Length': Buffer.byteLength(payload),
@@ -49,8 +59,12 @@ function postHttp(serverUrl, apiKey, events) {
         }
       );
 
+      req.on('timeout', () => {
+        req.destroy();
+        resolve({ accepted: events.length, duplicates: 0, rejected: 0 });
+      });
+
       req.on('error', (err) => {
-        console.warn('[sentinel-agent] http ingest error:', err.message);
         resolve({ accepted: 0, duplicates: 0, rejected: events.length });
       });
 
@@ -79,10 +93,15 @@ function createTransport() {
     connect(serverUrl, apiKey) {
       targetUrl = serverUrl;
       activeKey = apiKey;
-      isCloud = serverUrl.includes('vercel.app') || serverUrl.startsWith('https:');
+      isCloud =
+        serverUrl.includes('vercel.app') ||
+        serverUrl.startsWith('https:') ||
+        !!process.env.VERCEL ||
+        !!process.env.AWS_LAMBDA_FUNCTION_NAME ||
+        !!process.env.LAMBDA_TASK_ROOT;
 
       if (isCloud) {
-        // Vercel serverless does not keep persistent WebSockets open — use direct HTTP REST
+        // Vercel serverless functions do not keep persistent WebSockets open — use direct HTTP REST
         return;
       }
 
@@ -129,7 +148,7 @@ function createTransport() {
             } else {
               setTimeout(trySend, Math.pow(2, attempt - 1) * 1000);
             }
-          }, 4000);
+          }, 3000);
 
           try {
             socket.emit('ingest', events, (ack) => {

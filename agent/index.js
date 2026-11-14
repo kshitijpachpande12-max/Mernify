@@ -17,14 +17,8 @@ const { createMiddleware } = require('./lib/middleware');
 const { setupErrorTracking } = require('./lib/errors');
 
 /**
- * Mernify Agent — lightweight telemetry agent for Node.js applications.
- *
- * Usage:
- *   const mernify = require('mernify-agent');
- *   mernify.init({ apiKey: 'my-key', serviceName: 'my-app' });
- *   app.use(mernify.middleware());
- *   mernify.track('cart.items', 5);
- *   mernify.log('info', 'Server started');
+ * Sentinel Telemetry Agent — lightweight, serverless-safe telemetry agent for Node.js.
+ * Automatically adapts to long-running servers and ephemeral serverless environments (Vercel, AWS Lambda).
  */
 
 // ── Singleton state ────────────────────────────────────────────────────────
@@ -68,9 +62,9 @@ async function flushBuffer() {
   try {
     const events = buffer.flush();
     if (events.length === 0) return;
-    await transport.send(events);
+    return await transport.send(events);
   } catch (err) {
-    console.warn('[mernify-agent] flush error:', err.message);
+    console.warn('[sentinel-agent] flush error:', err.message);
   }
 }
 
@@ -81,7 +75,7 @@ async function collectMetrics() {
     const payload = await collect();
     addToBuffer(createEnvelope('metrics', payload));
   } catch (err) {
-    console.warn('[mernify-agent] metrics collection error:', err.message);
+    console.warn('[sentinel-agent] metrics collection error:', err.message);
   }
 }
 
@@ -91,7 +85,7 @@ function sendHeartbeat() {
   try {
     addToBuffer(createEnvelope('heartbeat', {}));
   } catch (err) {
-    console.warn('[mernify-agent] heartbeat error:', err.message);
+    console.warn('[sentinel-agent] heartbeat error:', err.message);
   }
 }
 
@@ -105,12 +99,12 @@ function agent(opts) {
 agent.init = function(opts) {
   try {
     if (initialized) {
-      console.warn('[mernify-agent] already initialized — ignoring duplicate init()');
+      console.warn('[sentinel-agent] already initialized — ignoring duplicate init()');
       return agent;
     }
 
     if (!opts || !opts.apiKey || !opts.serviceName) {
-      throw new Error('mernify-agent: apiKey and serviceName are required');
+      throw new Error('sentinel-agent: apiKey and serviceName are required');
     }
 
     config = {
@@ -121,11 +115,22 @@ agent.init = function(opts) {
       projectId: opts.projectId || 'proj_demo',
     };
 
+    // Auto-detect serverless environments (Vercel, AWS Lambda, Netlify, or HTTPS/Vercel URLs)
+    const isServerless = !!(
+      process.env.VERCEL ||
+      process.env.AWS_LAMBDA_FUNCTION_NAME ||
+      process.env.LAMBDA_TASK_ROOT ||
+      process.env.NETLIFY ||
+      (opts.serverUrl && (opts.serverUrl.includes('vercel.app') || opts.serverUrl.startsWith('https:'))) ||
+      opts.serverless === true
+    );
+    agent.isServerless = isServerless;
+
     seq = 0;
     buffer = createBuffer(10000);
     transport = createTransport();
 
-    // Connect to server
+    // Connect / configure transport
     transport.connect(config.serverUrl, config.apiKey);
 
     // Set up error tracking
@@ -134,24 +139,26 @@ agent.init = function(opts) {
       createEnvelope,
     });
 
-    // Immediate initial metric & heartbeat so service registers instantly
+    // Immediate initial metric & heartbeat so service registers instantly on cold start
     collectMetrics();
     sendHeartbeat();
-    setTimeout(() => { flushBuffer(); }, 100);
+    flushBuffer();
 
-    // Start recurring collection timers
-    metricsTimer = setInterval(() => { collectMetrics(); }, 2000);
-    heartbeatTimer = setInterval(() => { sendHeartbeat(); }, 5000);
-    flushTimer = setInterval(() => { flushBuffer(); }, 1000);
+    // Recurring collection timers (useful for traditional persistent servers or long-lived dev instances)
+    if (!isServerless) {
+      metricsTimer = setInterval(() => { collectMetrics(); }, 2000);
+      heartbeatTimer = setInterval(() => { sendHeartbeat(); }, 5000);
+      flushTimer = setInterval(() => { flushBuffer(); }, 1000);
 
-    // Unref all timers so they don't keep the process alive
-    if (metricsTimer.unref) metricsTimer.unref();
-    if (heartbeatTimer.unref) heartbeatTimer.unref();
-    if (flushTimer.unref) flushTimer.unref();
+      // Unref timers so they never prevent process exit
+      if (metricsTimer.unref) metricsTimer.unref();
+      if (heartbeatTimer.unref) heartbeatTimer.unref();
+      if (flushTimer.unref) flushTimer.unref();
+    }
 
     initialized = true;
   } catch (err) {
-    console.error('[mernify-agent] init failed:', err.message);
+    console.error('[sentinel-agent] init failed:', err.message);
   }
 
   return agent;
@@ -159,12 +166,12 @@ agent.init = function(opts) {
 
 agent.middleware = function() {
   if (!initialized) {
-    console.warn('[mernify-agent] middleware() called before init() — returning no-op');
+    console.warn('[sentinel-agent] middleware() called before init() — returning no-op');
     return function noopMiddleware(req, res, next) { next(); };
   }
 
   if (!_middleware) {
-    _middleware = createMiddleware({ addToBuffer, createEnvelope });
+    _middleware = createMiddleware(agent);
   }
 
   return _middleware;
@@ -174,6 +181,9 @@ agent.track = function(name, value) {
   try {
     if (!initialized) return;
     addToBuffer(createEnvelope('custom', { name, value }));
+    if (agent.isServerless) {
+      flushBuffer();
+    }
   } catch (_) {
     /* never crash host */
   }
@@ -184,10 +194,13 @@ agent.log = function(level, msg) {
     if (!initialized) return;
     const allowed = ['info', 'warn', 'error'];
     if (!allowed.includes(level)) {
-      console.warn('[mernify-agent] invalid log level "' + level + '", defaulting to "info"');
+      console.warn('[sentinel-agent] invalid log level "' + level + '", defaulting to "info"');
       level = 'info';
     }
     addToBuffer(createEnvelope('log', { level, message: msg }));
+    if (agent.isServerless) {
+      flushBuffer();
+    }
   } catch (_) {
     /* never crash host */
   }
@@ -195,5 +208,8 @@ agent.log = function(level, msg) {
 
 agent.addToBuffer = addToBuffer;
 agent.createEnvelope = createEnvelope;
+agent.flushBuffer = flushBuffer;
+agent.collectMetrics = collectMetrics;
+agent.sendHeartbeat = sendHeartbeat;
 
 module.exports = agent;
