@@ -53,12 +53,7 @@ You can install the Sentinel telemetry agent into any existing Node.js project u
 npm install github:kshitijpachpande12-max/Sentinel#main:agent
 ```
 
-#### Option B: From npm (Public package)
-```bash
-npm install sentinel-telemetry-agent
-```
-
-#### Option C: Local Folder Copy
+#### Option B: Local Folder Copy
 Simply copy the lightweight `agent/` folder from this repo into your project.
 
 ### 3. Initialize in Your Express Application
