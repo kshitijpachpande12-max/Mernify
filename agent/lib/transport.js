@@ -1,6 +1,15 @@
 'use strict';
 
-const { io } = require('socket.io-client');
+let io;
+try {
+  io = require('socket.io-client').io;
+} catch {
+  try {
+    io = require('../../scripts/node_modules/socket.io-client').io;
+  } catch {
+    io = null;
+  }
+}
 
 /**
  * Socket.IO transport — connects to the Mernify server's /ingest namespace

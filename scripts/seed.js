@@ -12,10 +12,11 @@ const API_KEY = process.env.API_KEY || 'dev-key';
 const PROJECT_ID = process.env.PROJECT_ID || 'proj_demo';
 const CHUNK_SIZE = 500;
 
-// 3 services
+// 4 services
 const services = [
   { name: 'cart-service', instanceId: 'cart-service-inst-1', baseCpu: 35, baseMem: 210, baseRequests: 50 },
   { name: 'payment-service', instanceId: 'payment-service-inst-1', baseCpu: 45, baseMem: 280, baseRequests: 80 },
+  { name: 'product-service', instanceId: 'product-service-inst-1', baseCpu: 30, baseMem: 220, baseRequests: 60 },
   { name: 'auth-service', instanceId: 'auth-service-inst-1', baseCpu: 25, baseMem: 160, baseRequests: 40 }
 ];
 

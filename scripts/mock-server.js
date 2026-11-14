@@ -180,7 +180,12 @@ app.get('/api/services', (req, res) => {
     return res.status(400).json({ error: 'projectId is required' });
   }
 
-  const projServices = serviceRegistry.get(projectId);
+  // Resolve project mapping so proj_demo and dev-key match interchangeably
+  let projServices = serviceRegistry.get(projectId);
+  if (!projServices && (projectId === 'proj_demo' || projectId === 'dev-key')) {
+    projServices = serviceRegistry.get('proj_demo') || serviceRegistry.get('dev-key');
+  }
+
   if (!projServices) {
     return res.json([]);
   }
@@ -256,13 +261,20 @@ function processIngestBatch(events, key) {
 
   const now = Date.now();
 
+  const proj = projects.find(p => p.apiKey === key || p.id === key);
+  const canonicalProjectId = proj ? proj.id : 'proj_demo';
+
   for (const ev of events) {
     if (!ev || typeof ev !== 'object') {
       rejected++;
       continue;
     }
-    const { eventId, projectId, serviceName, instanceId, ts, type, payload } = ev;
-    if (!eventId || !projectId || !serviceName || !instanceId || !type || !payload) {
+    const { eventId, serviceName, instanceId, ts, type, payload } = ev;
+    const rawProjectId = ev.projectId;
+    const effectiveProjectId = (rawProjectId && rawProjectId !== 'dev-key') ? rawProjectId : canonicalProjectId;
+    ev.projectId = effectiveProjectId;
+
+    if (!eventId || !effectiveProjectId || !serviceName || !instanceId || !type || !payload) {
       rejected++;
       continue;
     }
@@ -286,14 +298,20 @@ function processIngestBatch(events, key) {
       telemetryEvents.shift();
     }
 
-    // Update service registry
-    updateServiceState(projectId, serviceName, instanceId, ts || now);
+    // Update service registry for both the canonical project and proj_demo
+    updateServiceState(effectiveProjectId, serviceName, instanceId, ts || now);
+    if (effectiveProjectId !== 'proj_demo' && key === 'dev-key') {
+      updateServiceState('proj_demo', serviceName, instanceId, ts || now);
+    }
 
     // Check synthetic alerts
     checkAlerts(ev);
 
     // Buffer for dashboard namespace
     bufferEnvelope(ev);
+    if (effectiveProjectId !== 'proj_demo' && key === 'dev-key') {
+      bufferEnvelope({ ...ev, projectId: 'proj_demo' });
+    }
   }
 
   return { accepted, duplicates, rejected };

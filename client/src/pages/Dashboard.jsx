@@ -101,7 +101,25 @@ export default function Dashboard() {
     selectedServices,
     timeRange,
     isReplaying,
+    services,
   });
+
+  // Authoritative status for active tab service
+  const activeServiceStatus = useMemo(() => {
+    if (!activeTabService) return 'up';
+    if (serviceStatuses && serviceStatuses[activeTabService] !== undefined) {
+      return serviceStatuses[activeTabService];
+    }
+    const svcObj = services.find(
+      (s) => (typeof s === 'string' ? s : s.serviceName) === activeTabService
+    );
+    if (svcObj && svcObj.instances && svcObj.instances.length > 0) {
+      return svcObj.instances.some((i) => i.status === 'up') ? 'up' : 'down';
+    }
+    return 'down';
+  }, [activeTabService, serviceStatuses, services]);
+
+  const isActiveServiceDown = activeServiceStatus === 'down';
 
   // Calculate incident replay bounds.
   // rawTelemetryData is an object keyed by service name:
@@ -285,23 +303,79 @@ export default function Dashboard() {
             <>
               {/* Service Tabs */}
               <div className="flex items-center gap-2 border-b border-zinc-800 pb-3 overflow-x-auto">
-                {selectedServices.map((svc) => (
-                  <button
-                    key={svc}
-                    onClick={() => setActiveTabService(svc)}
-                    className={`px-4 py-2 rounded-xl text-xs font-mono transition-all flex items-center gap-2 cursor-pointer ${
-                      activeTabService === svc
-                        ? 'bg-[#18191d] text-white border border-zinc-600 font-bold shadow-md'
-                        : 'bg-[#121215] border border-zinc-800 text-zinc-400 hover:text-white'
-                    }`}
-                  >
-                    <span>{svc}</span>
-                  </button>
-                ))}
+                {selectedServices.map((svc) => {
+                  const svcStatus = serviceStatuses && serviceStatuses[svc] !== undefined
+                    ? serviceStatuses[svc]
+                    : (services.find(s => (s.serviceName || s) === svc)?.instances?.some(i => i.status === 'up') ? 'up' : 'down');
+                  const isUp = svcStatus === 'up';
+
+                  return (
+                    <button
+                      key={svc}
+                      onClick={() => setActiveTabService(svc)}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-mono transition-all flex items-center gap-2 cursor-pointer ${
+                        activeTabService === svc
+                          ? isUp
+                            ? 'bg-[#18191d] text-white border border-zinc-600 font-bold shadow-md'
+                            : 'bg-rose-950/30 text-rose-200 border border-rose-500/60 font-bold shadow-md'
+                          : isUp
+                          ? 'bg-[#121215] border border-zinc-800 text-zinc-400 hover:text-white'
+                          : 'bg-[#121215] border border-rose-950 text-zinc-400 hover:text-rose-200'
+                      }`}
+                    >
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          isUp ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500'
+                        }`}
+                      />
+                      <span>{svc}</span>
+                      {!isUp && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-400 border border-rose-500/30 uppercase tracking-tight">
+                          DOWN
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
 
               {activeTabService && (
                 <div className="space-y-6">
+                  {/* Service Down Alert Banner */}
+                  {isActiveServiceDown && (
+                    <div className="rounded-2xl border border-rose-500/40 bg-gradient-to-r from-rose-950/40 via-red-950/20 to-zinc-950/50 p-4 sm:p-5 shadow-[0_0_30px_rgba(244,63,94,0.12)] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 backdrop-blur-xl">
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-10 h-10 rounded-xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center shrink-0">
+                          <span className="w-3 h-3 rounded-full bg-rose-500 animate-ping" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2.5 flex-wrap">
+                            <span className="text-sm font-bold text-rose-400 uppercase tracking-wider font-mono">
+                              Service Offline
+                            </span>
+                            <span className="text-zinc-600">•</span>
+                            <span className="font-mono text-white text-sm font-bold bg-zinc-900/90 px-2.5 py-0.5 rounded-lg border border-zinc-800">
+                              {activeTabService}
+                            </span>
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/30">
+                              <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                              SERVICE IS DOWN
+                            </span>
+                          </div>
+                          <p className="text-xs text-zinc-400 mt-1">
+                            Heartbeat silence detected (&gt;15s without telemetry). The service process is unreachable or terminated. Showing last recorded state.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 self-end md:self-auto shrink-0 font-mono text-xs">
+                        <span className="text-zinc-500 text-[11px]">Heartbeat:</span>
+                        <span className="px-2.5 py-1 rounded-lg bg-rose-950/60 border border-rose-500/30 text-rose-300 font-bold">
+                          SILENT / DOWN
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Rich Metric KPI Stats Row */}
                   {(() => {
                     const metrics = activeData?.metrics || [];
@@ -311,62 +385,119 @@ export default function Dashboard() {
 
                     return (
                       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div className="p-4 rounded-2xl bg-[#121215] border border-zinc-800/90 shadow-xl">
+                        <div className={`p-4 rounded-2xl bg-[#121215] border shadow-xl transition-all ${
+                          isActiveServiceDown ? 'border-rose-950/60' : 'border-zinc-800/90'
+                        }`}>
                           <div className="flex items-center justify-between text-xs text-zinc-400 font-mono mb-1">
                             <span>CPU UTILIZATION</span>
-                            <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                            <span className={`w-2 h-2 rounded-full ${
+                              isActiveServiceDown ? 'bg-rose-500' : 'bg-white animate-pulse'
+                            }`} />
                           </div>
-                          <div className="text-2xl font-bold text-white font-mono tracking-tight">
-                            {m?.cpuPercent !== undefined ? `${m.cpuPercent.toFixed(1)}%` : '—'}
+                          <div className={`text-2xl font-bold font-mono tracking-tight ${
+                            isActiveServiceDown ? 'text-zinc-400' : 'text-white'
+                          }`}>
+                            {m?.cpuPercent !== undefined ? `${m.cpuPercent.toFixed(1)}%` : (isActiveServiceDown ? '0.0%' : '—')}
                           </div>
-                          <div className="text-[10px] text-zinc-400 font-mono mt-1">Core process footprint</div>
+                          <div className={`text-[10px] font-mono mt-1 ${
+                            isActiveServiceDown ? 'text-rose-400 font-medium' : 'text-zinc-400'
+                          }`}>
+                            {isActiveServiceDown ? 'Service down • Offline' : 'Core process footprint'}
+                          </div>
                         </div>
 
-                        <div className="p-4 rounded-2xl bg-[#121215] border border-zinc-800/90 shadow-xl">
+                        <div className={`p-4 rounded-2xl bg-[#121215] border shadow-xl transition-all ${
+                          isActiveServiceDown ? 'border-rose-950/60' : 'border-zinc-800/90'
+                        }`}>
                           <div className="flex items-center justify-between text-xs text-zinc-400 font-mono mb-1">
                             <span>MEMORY (RSS)</span>
-                            <span className="w-2 h-2 rounded-full bg-zinc-400" />
+                            <span className={`w-2 h-2 rounded-full ${
+                              isActiveServiceDown ? 'bg-rose-500/60' : 'bg-zinc-400'
+                            }`} />
                           </div>
-                          <div className="text-2xl font-bold text-white font-mono tracking-tight">
+                          <div className={`text-2xl font-bold font-mono tracking-tight ${
+                            isActiveServiceDown ? 'text-zinc-400' : 'text-white'
+                          }`}>
                             {m?.memRssMB !== undefined ? `${Math.round(m.memRssMB)} MB` : '—'}
                           </div>
-                          <div className="text-[10px] text-zinc-400 font-mono mt-1">Resident process set</div>
+                          <div className="text-[10px] text-zinc-400 font-mono mt-1">
+                            {isActiveServiceDown ? 'Last recorded footprint' : 'Resident process set'}
+                          </div>
                         </div>
 
-                        <div className="p-4 rounded-2xl bg-[#121215] border border-zinc-800/90 shadow-xl">
+                        <div className={`p-4 rounded-2xl bg-[#121215] border shadow-xl transition-all ${
+                          isActiveServiceDown ? 'border-rose-950/60' : 'border-zinc-800/90'
+                        }`}>
                           <div className="flex items-center justify-between text-xs text-zinc-400 font-mono mb-1">
                             <span>P99 LATENCY</span>
-                            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                            <span className={`w-2 h-2 rounded-full ${
+                              isActiveServiceDown ? 'bg-zinc-600' : 'bg-emerald-400'
+                            }`} />
                           </div>
-                          <div className="text-2xl font-bold text-white font-mono tracking-tight">
-                            {h?.latencyP99 !== undefined ? `${h.latencyP99.toFixed(1)} ms` : '—'}
+                          <div className={`text-2xl font-bold font-mono tracking-tight ${
+                            isActiveServiceDown ? 'text-zinc-500' : 'text-white'
+                          }`}>
+                            {isActiveServiceDown ? '—' : (h?.latencyP99 !== undefined ? `${h.latencyP99.toFixed(1)} ms` : '—')}
                           </div>
-                          <div className="text-[10px] text-emerald-400 font-mono mt-1">Critical tail threshold</div>
+                          <div className="text-[10px] font-mono mt-1 text-zinc-500">
+                            {isActiveServiceDown ? 'Service unreachable' : 'Critical tail threshold'}
+                          </div>
                         </div>
 
-                        <div className="p-4 rounded-2xl bg-[#121215] border border-zinc-800/90 shadow-xl">
-                          <div className="flex items-center justify-between text-xs text-zinc-400 font-mono mb-1">
-                            <span>THROUGHPUT</span>
-                            <span className="w-2 h-2 rounded-full bg-white" />
+                        <div className={`p-4 rounded-2xl bg-[#121215] border shadow-xl transition-all ${
+                          isActiveServiceDown ? 'border-rose-900/40 bg-rose-950/10' : 'border-zinc-800/90'
+                        }`}>
+                          <div className="flex items-center justify-between text-xs font-mono mb-1">
+                            <span className={isActiveServiceDown ? 'text-rose-300' : 'text-zinc-400'}>
+                              THROUGHPUT
+                            </span>
+                            <span className={`w-2 h-2 rounded-full ${
+                              isActiveServiceDown ? 'bg-rose-500' : 'bg-white'
+                            }`} />
                           </div>
-                          <div className="text-2xl font-bold text-white font-mono tracking-tight">
-                            {h?.requests !== undefined ? `${h.requests} req/s` : '—'}
+                          <div className={`text-2xl font-bold font-mono tracking-tight ${
+                            isActiveServiceDown ? 'text-rose-400' : 'text-white'
+                          }`}>
+                            {isActiveServiceDown ? '0 req/s' : (h?.requests !== undefined ? `${h.requests} req/s` : '—')}
                           </div>
-                          <div className="text-[10px] text-zinc-400 font-mono mt-1">Active request stream</div>
+                          <div className={`text-[10px] font-mono mt-1 ${
+                            isActiveServiceDown ? 'text-rose-400 font-medium' : 'text-zinc-400'
+                          }`}>
+                            {isActiveServiceDown ? 'Stream stopped • Offline' : 'Active request stream'}
+                          </div>
                         </div>
                       </div>
                     );
                   })()}
 
+                  {/* Offline Warning for Historical Charts */}
+                  {isActiveServiceDown && (
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-rose-950/20 border border-rose-500/20 text-rose-300 text-xs font-mono">
+                      <span>⚠️ Telemetry stream halted: charts and routes display last recorded frames before service outage</span>
+                    </div>
+                  )}
+
                   {/* Top Charts Row */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <MetricsChart serviceName={activeTabService} data={activeData?.metrics || []} />
-                    <LatencyChart serviceName={activeTabService} data={activeData?.http || []} />
+                    <MetricsChart
+                      serviceName={activeTabService}
+                      data={activeData?.metrics || []}
+                      isDown={isActiveServiceDown}
+                    />
+                    <LatencyChart
+                      serviceName={activeTabService}
+                      data={activeData?.http || []}
+                      isDown={isActiveServiceDown}
+                    />
                   </div>
 
                   {/* Middle Charts & Tables */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <RequestChart serviceName={activeTabService} data={activeData?.http || []} />
+                    <RequestChart
+                      serviceName={activeTabService}
+                      data={activeData?.http || []}
+                      isDown={isActiveServiceDown}
+                    />
                     <RouteTable serviceName={activeTabService} routes={activeData?.byRoute || {}} />
                   </div>
 

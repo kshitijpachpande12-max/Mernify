@@ -11,7 +11,7 @@ import {
   tooltipStyle,
 } from './charts/chartUtils';
 
-const LatencyChart = memo(function LatencyChart({ serviceName, data = [] }) {
+const LatencyChart = memo(function LatencyChart({ serviceName, data = [], isDown = false }) {
   const chartData = useMemo(
     () =>
       downsample(data).map((d) => ({
@@ -30,10 +30,19 @@ const LatencyChart = memo(function LatencyChart({ serviceName, data = [] }) {
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div>
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span
+              className={`w-2 h-2 rounded-full ${
+                isDown ? 'bg-rose-500' : 'bg-emerald-400 animate-pulse'
+              }`}
+            />
             <h3 className="text-sm font-bold text-white tracking-tight">
               Latency Distribution (ms) — <span className="font-mono text-zinc-300">{serviceName}</span>
             </h3>
+            {isDown && (
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                OFFLINE
+              </span>
+            )}
           </div>
           <p className="text-[11px] text-zinc-400 mt-0.5">High-resolution P50, P95, and P99 latency percentiles</p>
         </div>

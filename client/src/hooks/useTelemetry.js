@@ -12,6 +12,7 @@ export function useTelemetry({
   timeRange = 'live',
   isReplaying = false,
   replayTime = null,
+  services = [],
 }) {
   // Service-keyed data maps
   // Each service has: metrics: [], http: [], errors: [], byRoute: {}
@@ -27,6 +28,7 @@ export function useTelemetry({
   const flushTimerRef = useRef(null);
   const seenEventIdsRef = useRef(new Set());
   const asOfMapRef = useRef(new Map()); // serviceName -> asOf ts
+  const lastSeenMapRef = useRef(new Map()); // serviceName -> epoch ms
   const socketRef = useRef(null);
 
   // Refs that always hold the latest values, so long-lived socket handlers
@@ -113,10 +115,16 @@ export function useTelemetry({
 
     socket.on('service:status', (data) => {
       if (data && data.serviceName) {
+        const nextStatus = data.status || (data.up ? 'up' : 'down');
         setServiceStatuses((prev) => ({
           ...prev,
-          [data.serviceName]: data.status || (data.up ? 'up' : 'down'),
+          [data.serviceName]: nextStatus,
         }));
+        if (nextStatus === 'up') {
+          lastSeenMapRef.current.set(data.serviceName, Date.now());
+        } else {
+          lastSeenMapRef.current.set(data.serviceName, 0);
+        }
       }
     });
 
@@ -228,6 +236,23 @@ export function useTelemetry({
 
     if (incoming.size === 0) return;
 
+    // Mark telemetry arrival time for each service and reconcile status to 'up'
+    const now = Date.now();
+    for (const serviceName of incoming.keys()) {
+      lastSeenMapRef.current.set(serviceName, now);
+    }
+    setServiceStatuses((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const serviceName of incoming.keys()) {
+        if (next[serviceName] !== 'up') {
+          next[serviceName] = 'up';
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+
     // Pure updater: only merges `incoming` into previous state.
     setTelemetryData((prevData) => {
       const updated = { ...prevData };
@@ -265,6 +290,72 @@ export function useTelemetry({
   }, []);
 
   flushBufferRef.current = flushBuffer;
+
+  // Synchronize statuses when services list updates from REST polling
+  useEffect(() => {
+    if (!services || services.length === 0) return;
+    setServiceStatuses((prev) => {
+      const next = { ...prev };
+      let changed = false;
+
+      for (const svc of services) {
+        const name = typeof svc === 'string' ? svc : svc.serviceName;
+        if (!name) continue;
+
+        if (svc && Array.isArray(svc.instances) && svc.instances.length > 0) {
+          const anyUp = svc.instances.some((i) => i.status === 'up');
+          const latestSeen = svc.instances.reduce(
+            (max, i) => Math.max(max, i.lastSeen ? new Date(i.lastSeen).getTime() : 0),
+            0
+          );
+
+          if (latestSeen > 0 && !lastSeenMapRef.current.has(name)) {
+            lastSeenMapRef.current.set(name, latestSeen);
+          }
+
+          if (!anyUp && next[name] !== 'down') {
+            next[name] = 'down';
+            changed = true;
+          } else if (anyUp && next[name] === undefined) {
+            next[name] = 'up';
+            changed = true;
+          }
+        } else if (next[name] === undefined) {
+          next[name] = 'down';
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [services]);
+
+  // Client-side Heartbeat / Silence detection:
+  // In 'live' mode, if no telemetry packet is received for >15s, transition status to 'down'
+  useEffect(() => {
+    if (isReplaying || timeRange !== 'live') return;
+
+    const timer = setInterval(() => {
+      const now = Date.now();
+      const SILENCE_TIMEOUT = 15000; // 15 seconds
+
+      setServiceStatuses((prev) => {
+        let changed = false;
+        const next = { ...prev };
+
+        for (const [svcName, lastSeen] of lastSeenMapRef.current.entries()) {
+          if (lastSeen > 0 && now - lastSeen > SILENCE_TIMEOUT) {
+            if (next[svcName] !== 'down') {
+              next[svcName] = 'down';
+              changed = true;
+            }
+          }
+        }
+        return changed ? next : prev;
+      });
+    }, 2000);
+
+    return () => clearInterval(timer);
+  }, [isReplaying, timeRange]);
 
   // Load instant telemetry on mount and historical backfills on timeRange changes
   useEffect(() => {

@@ -24,25 +24,44 @@ router.get('/', async (req, res) => {
     }
 
     const states = await ServiceState.find({ projectId: project._id }).lean();
+    const now = Date.now();
+    const SILENCE_TIMEOUT = 15000; // 15s
 
     // Group by serviceName
     const grouped = {};
     for (const s of states) {
       if (!grouped[s.serviceName]) grouped[s.serviceName] = [];
+      const lastHeartbeatMs = s.lastHeartbeat ? new Date(s.lastHeartbeat).getTime() : 0;
+      const isUp = s.status === 'up' && (now - lastHeartbeatMs <= SILENCE_TIMEOUT);
       grouped[s.serviceName].push({
         instanceId: s.instanceId,
-        status: s.status,
+        status: isUp ? 'up' : 'down',
         lastSeen: s.lastHeartbeat,
       });
     }
 
     // Fallback: If no states recorded yet, check distinct services in TelemetryEvent
     if (Object.keys(grouped).length === 0) {
-      const distinctServices = await require('../models/TelemetryEvent').distinct('serviceName', {
+      const TelemetryEvent = require('../models/TelemetryEvent');
+      const distinctServices = await TelemetryEvent.distinct('serviceName', {
         projectId: project._id,
       });
       for (const name of distinctServices) {
-        grouped[name] = [{ instanceId: 'inst-1', status: 'up', lastSeen: new Date() }];
+        const latest = await TelemetryEvent.findOne({
+          projectId: project._id,
+          serviceName: name,
+        })
+          .sort({ ts: -1 })
+          .select('ts')
+          .lean();
+
+        const latestTs = latest?.ts ? new Date(latest.ts).getTime() : 0;
+        const isUp = latestTs > 0 && (now - latestTs <= SILENCE_TIMEOUT);
+        grouped[name] = [{
+          instanceId: `${name}-inst-1`,
+          status: isUp ? 'up' : 'down',
+          lastSeen: latest?.ts || new Date(0),
+        }];
       }
     }
 
@@ -51,9 +70,10 @@ router.get('/', async (req, res) => {
       Object.keys(grouped).length === 0 &&
       (project.apiKey === 'dev-key' || project.name === 'Demo Project')
     ) {
-      grouped['cart-service'] = [{ instanceId: 'cart-inst-1', status: 'up', lastSeen: new Date() }];
-      grouped['payment-service'] = [{ instanceId: 'payment-inst-1', status: 'up', lastSeen: new Date() }];
-      grouped['auth-service'] = [{ instanceId: 'auth-inst-1', status: 'up', lastSeen: new Date() }];
+      grouped['cart-service'] = [{ instanceId: 'cart-inst-1', status: 'down', lastSeen: new Date(0) }];
+      grouped['payment-service'] = [{ instanceId: 'payment-inst-1', status: 'down', lastSeen: new Date(0) }];
+      grouped['product-service'] = [{ instanceId: 'product-inst-1', status: 'down', lastSeen: new Date(0) }];
+      grouped['auth-service'] = [{ instanceId: 'auth-inst-1', status: 'down', lastSeen: new Date(0) }];
     }
 
     const result = Object.entries(grouped).map(([serviceName, instances]) => ({

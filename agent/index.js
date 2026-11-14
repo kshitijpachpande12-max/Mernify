@@ -1,6 +1,15 @@
 'use strict';
 
-const { ulid } = require('ulid');
+let ulid;
+try {
+  ulid = require('ulid').ulid;
+} catch {
+  try {
+    ulid = require('../scripts/node_modules/ulid').ulid;
+  } catch {
+    ulid = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
+  }
+}
 const { createBuffer } = require('./lib/buffer');
 const { createTransport } = require('./lib/transport');
 const { collect } = require('./lib/collector');
@@ -109,7 +118,7 @@ agent.init = function(opts) {
       serverUrl: opts.serverUrl || 'http://localhost:5000',
       serviceName: opts.serviceName,
       instanceId: opts.instanceId || ulid(),
-      projectId: opts.apiKey, // server will override with real project._id
+      projectId: opts.projectId || 'proj_demo',
     };
 
     seq = 0;
@@ -124,6 +133,11 @@ agent.init = function(opts) {
       addToBuffer,
       createEnvelope,
     });
+
+    // Immediate initial metric & heartbeat so service registers instantly
+    collectMetrics();
+    sendHeartbeat();
+    setTimeout(() => { flushBuffer(); }, 100);
 
     // Start recurring collection timers
     metricsTimer = setInterval(() => { collectMetrics(); }, 2000);

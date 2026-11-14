@@ -11,7 +11,7 @@ import {
   tooltipStyle,
 } from './charts/chartUtils';
 
-const MetricsChart = memo(function MetricsChart({ serviceName, data = [] }) {
+const MetricsChart = memo(function MetricsChart({ serviceName, data = [], isDown = false }) {
   const chartData = useMemo(
     () =>
       downsample(data).map((d) => ({
@@ -31,10 +31,19 @@ const MetricsChart = memo(function MetricsChart({ serviceName, data = [] }) {
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div>
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+            <span
+              className={`w-2 h-2 rounded-full ${
+                isDown ? 'bg-rose-500' : 'bg-white animate-pulse'
+              }`}
+            />
             <h3 className="text-sm font-bold text-white tracking-tight">
               Process Health & Memory — <span className="font-mono text-zinc-300">{serviceName}</span>
             </h3>
+            {isDown && (
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                OFFLINE
+              </span>
+            )}
           </div>
           <p className="text-[11px] text-zinc-400 mt-0.5">CPU utilization, RSS footprint, heap, and event-loop lag</p>
         </div>

@@ -63,6 +63,7 @@ console.log('-----------------------------------');
 const serviceNames = [
   'cart-service',
   'payment-service',
+  'product-service',
   'auth-service',
   'inventory-service',
   'order-service',
