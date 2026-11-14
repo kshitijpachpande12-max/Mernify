@@ -29,8 +29,8 @@ export default function Login() {
   };
 
   const handleDemoFill = () => {
-    setEmail('demo@sentinel.dev');
-    setPassword('password123');
+    setEmail('demo@mernify.dev');
+    setPassword('demo1234');
   };
 
   return (
