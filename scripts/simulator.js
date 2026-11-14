@@ -288,10 +288,8 @@ async function tick() {
       }
     }));
 
-    // 3. Heartbeat envelope
-    if (tickCount % 3 === 0) {
-      envelopes.push(generateEnvelope(src, 'heartbeat', {}));
-    }
+    // 3. Heartbeat envelope (sent every tick for continuous UP status)
+    envelopes.push(generateEnvelope(src, 'heartbeat', {}));
 
     // 4. Occasional error envelope
     if (isErrorSpike || Math.random() < 0.02) {
