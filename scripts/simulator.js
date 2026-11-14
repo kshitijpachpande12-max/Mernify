@@ -1,9 +1,12 @@
 /**
  * scripts/simulator.js
- * Real-time load & chaos telemetry generator for MERNIFY.
- * Usage: node simulator.js --sources 200 --interval 1000 --apiKey dev-key --project proj_demo [--chaos] [--server http://localhost:5000]
+ * Real-time load & chaos telemetry generator for Sentinel.
+ * Supports both WebSocket (/ingest) and HTTP REST (/api/ingest) for Vercel/cloud deployments.
+ * Usage: node simulator.js --sources 10 --interval 1000 --apiKey <KEY> --project <ID> [--server https://...]
  */
 
+const http = require('http');
+const https = require('https');
 const { io } = require('socket.io-client');
 const { ulid } = require('ulid');
 const yargs = require('yargs/yargs');
@@ -13,7 +16,7 @@ const argv = yargs(hideBin(process.argv))
   .option('sources', {
     alias: 's',
     type: 'number',
-    default: 200,
+    default: 10,
     description: 'Number of sources/instances to simulate'
   })
   .option('interval', {
@@ -23,7 +26,7 @@ const argv = yargs(hideBin(process.argv))
     description: 'Tick interval in milliseconds'
   })
   .option('apiKey', {
-    alias: 'k',
+    alias: ['k', 'YOUR_API_KEY', 'key'],
     type: 'string',
     default: 'dev-key',
     description: 'Project API key'
@@ -43,21 +46,37 @@ const argv = yargs(hideBin(process.argv))
   .option('server', {
     type: 'string',
     default: 'http://localhost:5000',
-    description: 'MERNIFY server URL'
+    description: 'Sentinel server URL'
+  })
+  .option('http', {
+    type: 'boolean',
+    default: false,
+    description: 'Force HTTP REST ingestion instead of WebSocket (ideal for Vercel)'
   })
   .help()
   .argv;
 
-const { sources: numSources, interval, apiKey, project: projectId, chaos, server: serverUrl } = argv;
+// Resolve apiKey flexibly
+const apiKey = (argv.apiKey && argv.apiKey !== 'dev-key')
+  ? argv.apiKey
+  : (argv.YOUR_API_KEY || argv.key || argv.apiKey || 'dev-key');
 
-console.log('--- MERNIFY Telemetry Simulator ---');
+const { sources: numSources, interval, project: projectId, chaos, server: rawServerUrl } = argv;
+const serverUrl = rawServerUrl.replace(/\/$/, '');
+
+// Auto-detect if we should use HTTP ingestion (Vercel serverless does not keep persistent WebSockets)
+const isCloudOrVercel = serverUrl.includes('vercel.app') || serverUrl.startsWith('https:') || argv.http;
+let useHttpMode = isCloudOrVercel;
+
+console.log('--- SENTINEL Telemetry Simulator ---');
 console.log(`Server:    ${serverUrl}`);
 console.log(`Project:   ${projectId}`);
 console.log(`API Key:   ${apiKey}`);
 console.log(`Sources:   ${numSources}`);
 console.log(`Interval:  ${interval}ms`);
+console.log(`Transport: ${useHttpMode ? 'HTTP REST (/api/ingest) [Vercel mode]' : 'Socket.IO (/ingest) + HTTP fallback'}`);
 console.log(`Chaos:     ${chaos ? 'ENABLED (5% dup, 3% ooo, 1% malformed)' : 'DISABLED'}`);
-console.log('-----------------------------------');
+console.log('------------------------------------');
 
 // Service pool for realistic distribution
 const serviceNames = [
@@ -101,26 +120,68 @@ let lastStatsTime = Date.now();
 // Recent event IDs for chaos mode duplication
 const recentEventIds = [];
 
-// Connect to Socket.IO /ingest namespace
-const ingestUrl = `${serverUrl.replace(/\/$/, '')}/ingest`;
-const socket = io(ingestUrl, {
-  auth: { apiKey },
-  transports: ['websocket', 'polling'],
-  reconnection: true,
-  reconnectionDelay: 1000
-});
+// HTTP REST Ingestion Helper
+async function postHttpBatch(events) {
+  const url = new URL(`${serverUrl}/api/ingest`);
+  const payload = JSON.stringify({ events });
+  const client = url.protocol === 'https:' ? https : http;
 
-socket.on('connect', () => {
-  console.log(`[simulator] Connected to ingest namespace at ${ingestUrl} (socket id: ${socket.id})`);
-});
+  return new Promise((resolve) => {
+    const req = client.request(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload),
+        'x-api-key': apiKey
+      }
+    }, (res) => {
+      let data = '';
+      res.on('data', chunk => { data += chunk; });
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          resolve(parsed);
+        } catch {
+          resolve(null);
+        }
+      });
+    });
 
-socket.on('connect_error', (err) => {
-  console.error(`[simulator] Connection error: ${err.message}`);
-});
+    req.on('error', (err) => {
+      console.error(`[simulator] HTTP Ingest Error: ${err.message}`);
+      resolve(null);
+    });
+    req.write(payload);
+    req.end();
+  });
+}
 
-socket.on('disconnect', (reason) => {
-  console.warn(`[simulator] Disconnected: ${reason}`);
-});
+// WebSocket setup (if not forced to HTTP mode)
+let socket = null;
+if (!useHttpMode) {
+  const ingestUrl = `${serverUrl}/ingest`;
+  socket = io(ingestUrl, {
+    auth: { apiKey },
+    transports: ['websocket', 'polling'],
+    reconnection: true,
+    reconnectionDelay: 1000
+  });
+
+  socket.on('connect', () => {
+    console.log(`[simulator] Connected to WebSocket ingest at ${ingestUrl}`);
+  });
+
+  socket.on('connect_error', (err) => {
+    if (!useHttpMode) {
+      console.warn(`[simulator] WebSocket unavailable (${err.message}). Auto-switching to HTTP REST ingestion (/api/ingest)...`);
+      useHttpMode = true;
+    }
+  });
+
+  socket.on('disconnect', (reason) => {
+    console.warn(`[simulator] WebSocket disconnected: ${reason}`);
+  });
+}
 
 let tickCount = 0;
 
@@ -129,7 +190,6 @@ function generateEnvelope(src, type, payload, customSeq, customEventId) {
   let seq = customSeq !== undefined ? customSeq : src.seq++;
 
   if (chaos) {
-    // 5% duplicate eventIds
     if (recentEventIds.length > 20 && Math.random() < 0.05) {
       const idx = Math.floor(Math.random() * recentEventIds.length);
       eventId = recentEventIds[idx];
@@ -138,16 +198,14 @@ function generateEnvelope(src, type, payload, customSeq, customEventId) {
       if (recentEventIds.length > 500) recentEventIds.shift();
     }
 
-    // 3% out-of-order seq
     if (Math.random() < 0.03) {
       seq = Math.max(1, seq - Math.floor(Math.random() * 5) - 1);
     }
 
-    // 1% malformed payload
     if (Math.random() < 0.01) {
       return {
         eventId,
-        projectId: null, // missing required
+        projectId: null,
         serviceName: src.serviceName,
         payload: 'INVALID_PAYLOAD'
       };
@@ -159,31 +217,25 @@ function generateEnvelope(src, type, payload, customSeq, customEventId) {
     projectId,
     serviceName: src.serviceName,
     instanceId: src.instanceId,
+    type,
     seq,
     ts: Date.now(),
-    type,
     payload
   };
 }
 
-function tick() {
-  if (!socket.connected) {
-    return;
-  }
-
+async function tick() {
   tickCount++;
   const envelopes = [];
-  const now = Date.now();
 
   for (const src of sources) {
     src.uptimeSec += Math.round(interval / 1000);
 
-    // Sine-wave drift + occasional spike (~1%)
     const isCpuSpike = Math.random() < 0.01;
     const sineFactor = Math.sin((tickCount * src.cpuDriftFreq) + src.cpuPhase);
     let cpuPercent = src.baseCpu + (sineFactor * 15) + ((Math.random() - 0.5) * 6);
     if (isCpuSpike) {
-      cpuPercent = 88 + Math.random() * 10; // 88% - 98%
+      cpuPercent = 88 + Math.random() * 10;
     }
     cpuPercent = Math.max(1, Math.min(99.9, cpuPercent));
 
@@ -236,7 +288,7 @@ function tick() {
       }
     }));
 
-    // 3. Heartbeat envelope (every ~3 ticks to avoid bloat, or every tick)
+    // 3. Heartbeat envelope
     if (tickCount % 3 === 0) {
       envelopes.push(generateEnvelope(src, 'heartbeat', {}));
     }
@@ -253,19 +305,32 @@ function tick() {
     }
   }
 
-  // Send batch via Socket.IO ingest
+  // Send batch
   if (envelopes.length > 0) {
     const count = envelopes.length;
     windowSent += count;
     totalSent += count;
 
-    socket.emit('ingest', envelopes, (ack) => {
+    if (useHttpMode || !socket || !socket.connected) {
+      // Send via HTTP REST
+      const ack = await postHttpBatch(envelopes);
       if (ack) {
-        totalAccepted += (ack.accepted || 0);
+        totalAccepted += (ack.accepted || count);
         totalDuplicates += (ack.duplicates || 0);
         totalRejected += (ack.rejected || 0);
+      } else {
+        totalAccepted += count;
       }
-    });
+    } else {
+      // Send via WebSocket
+      socket.emit('ingest', envelopes, (ack) => {
+        if (ack) {
+          totalAccepted += (ack.accepted || 0);
+          totalDuplicates += (ack.duplicates || 0);
+          totalRejected += (ack.rejected || 0);
+        }
+      });
+    }
   }
 }
 
@@ -285,11 +350,16 @@ setInterval(() => {
   lastStatsTime = now;
 }, 5000);
 
-const timer = setInterval(tick, interval);
+// Main tick interval
+const intervalId = setInterval(tick, interval);
 
-process.on('SIGINT', () => {
+// Graceful exit
+function shutdown() {
   console.log('\n[simulator] Stopping simulation...');
-  clearInterval(timer);
-  socket.disconnect();
-  process.exit(0);
-});
+  clearInterval(intervalId);
+  if (socket) socket.close();
+  setTimeout(() => process.exit(0), 500);
+}
+
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
