@@ -5,6 +5,7 @@
  */
 
 const http = require('http');
+const https = require('https');
 const { ulid } = require('ulid');
 
 const SERVER_URL = process.env.SERVER_URL || 'http://localhost:5000';
@@ -25,7 +26,8 @@ async function postBatch(events) {
   const payload = JSON.stringify({ events });
 
   return new Promise((resolve, reject) => {
-    const req = http.request(url, {
+    const client = url.protocol === 'https:' ? https : http;
+    const req = client.request(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
