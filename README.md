@@ -48,42 +48,47 @@ Anyone can instrument their existing Node.js / Express backend with Sentinel in 
 Copy the lightweight `agent/` folder from this repository into your Node.js application directory (or install it via npm/git).
 
 ### 3. Initialize in Your Express Application
-Add Sentinel to your service's entry point (e.g. `index.js` or `server.js`):
+Add Sentinel to your existing service's entry point (e.g. `index.js`, `server.js`, or `app.js`). Your existing routes, database, and ports stay completely untouched:
 
 ```javascript
+// --- Your Existing Express Server ---
 const express = require('express');
-const sentinel = require('./agent'); // path to agent folder
-
 const app = express();
 
-// 1. Initialize the Sentinel Telemetry Agent
+// 1. Import Sentinel (does not replace your server)
+const sentinel = require('./agent'); 
+
+// 2. Initialize with your Sentinel project credentials
 sentinel.init({
-  serviceName: 'cart-service',                      // Your microservice name
+  serviceName: 'my-existing-api',                   // Whatever name you want shown on the dashboard
   apiKey: 'YOUR_PROJECT_API_KEY',                  // Copied from Sentinel project card
   projectId: 'YOUR_PROJECT_ID',                    // Copied from /dashboard/<PROJECT_ID> URL
-  serverUrl: 'https://sentinel-rosy-three.vercel.app', // Or http://localhost:5000 if local
+  serverUrl: 'https://sentinel-rosy-three.vercel.app', // Or http://localhost:5000 if running locally
 });
 
-// 2. Attach the HTTP tracking middleware (tracks RPS, route latencies, and 4xx/5xx errors)
+// 3. Mount the tracking middleware right after const app = express()
 app.use(sentinel.middleware());
 
-// 3. Your regular application routes
-app.get('/cart', (req, res) => {
-  res.json({ items: ['item_1', 'item_2'], total: 299 });
-});
+// --- Everything else in your existing app stays exactly the same! ---
+app.use(express.json());
+app.use('/api/users', userRoutes);
+app.use('/api/orders', orderRoutes);
 
-app.post('/checkout', (req, res) => {
-  res.json({ status: 'order_processed' });
-});
-
-// 4. (Optional) Custom business metric tracking & structured logs
-sentinel.track('checkout.revenue', 299);
-sentinel.log('info', 'Checkout processed successfully');
-
-app.listen(4000, () => {
-  console.log('Cart service listening on port 4000 with Sentinel telemetry active');
+app.listen(process.env.PORT || 8000, () => {
+  console.log('Existing application running normally — telemetry streaming to Sentinel in background');
 });
 ```
+
+> **Non-Intrusive & Fail-Safe Guarantee:** Sentinel operates asynchronously in an in-memory ring-buffer. It does not block request lifecycles, requires no port changes, and if the Sentinel telemetry endpoint is ever unreachable, the agent drops events silently so your host application is never affected.
+
+### 4. Non-Express Services (Workers, Cron Jobs, Scripts)
+If your service doesn't use Express (e.g. a message queue consumer, cron job, or worker), call `sentinel.init(...)` at startup without the middleware. Sentinel will still continuously stream **CPU usage, RSS Memory, Event Loop Lag, Heartbeats (UP status), and Uncaught Crash Traces** automatically!
+
+### 5. Services in Other Languages (Python, Go, Java, Rust)
+Services written in other languages can stream telemetry directly using any standard HTTP client:
+- **POST** `https://sentinel-rosy-three.vercel.app/api/ingest`
+- **Header:** `x-api-key: YOUR_PROJECT_API_KEY`
+- **Body:** `{ "events": [ { "eventId": "01J...", "projectId": "...", "serviceName": "go-api", "type": "heartbeat", "seq": 1, "ts": 1731600000000, "payload": {} } ] }`
 
 ### 4. What Happens Automatically
 Once initialized, the Sentinel Agent operates completely in the background:
