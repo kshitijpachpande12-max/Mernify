@@ -1,10 +1,37 @@
 # 🛡️ SENTINEL
 
-> **Sentinel (formerly Mernitor / Mernify / Mini Datadog)** — A high-throughput, lightweight real-time telemetry and incident intelligence platform built with the MERN stack and Socket.IO.
+> **Sentinel (formerly Mernitor / Mernify / Mini Datadog)** — A high-throughput, lightweight real-time telemetry and incident intelligence platform built with the MERN stack, Socket.IO, and Vercel serverless cloud streaming.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Frontend Deployment](https://img.shields.io/badge/Vercel-Frontend%20Live-6366f1?logo=vercel&logoColor=white)](https://sentinel-i6lk.vercel.app)
+[![Backend Deployment](https://img.shields.io/badge/Vercel-Backend%20Live-10b981?logo=vercel&logoColor=white)](https://sentinel-rosy-three.vercel.app/health)
 [![Stack](https://img.shields.io/badge/Stack-MERN%20%2B%20Socket.IO-brightgreen)](https://socket.io/)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](docs/ARCHITECTURE.md)
+
+---
+
+## 🌐 Live Deployments
+
+| Component | Live URL | Status | Description |
+| :--- | :--- | :---: | :--- |
+| **Frontend Web App** | [https://sentinel-i6lk.vercel.app](https://sentinel-i6lk.vercel.app) | ![Live](https://img.shields.io/badge/Status-Online-emerald?style=flat-square) | React 18 + Vite observability dashboard with Magic UI & Skipper UI |
+| **Backend Server** | [https://sentinel-rosy-three.vercel.app](https://sentinel-rosy-three.vercel.app) | ![Live](https://img.shields.io/badge/Status-Online-emerald?style=flat-square) | Ingestion pipeline, telemetry queries, and incident intelligence API |
+| **Health Check** | [https://sentinel-rosy-three.vercel.app/health](https://sentinel-rosy-three.vercel.app/health) | `{"status":"ok"}` | Uptime verification and cold-start check |
+
+---
+
+### ⚡ Quick Live Cloud Demo
+
+To stream real-time synthetic microservice telemetry directly into the live deployment:
+
+```bash
+# 1. Clone & install dependencies
+git clone https://github.com/kshitijpachpande12-max/Mernify.git
+cd Mernify/scripts && npm install
+
+# 2. Launch the real-time telemetry simulator
+node simulator.js --server https://sentinel-rosy-three.vercel.app --project YOUR_PROJECT_ID --apiKey YOUR_API_KEY --sources 10 --interval 1000
+```
+Then open **[https://sentinel-i6lk.vercel.app](https://sentinel-i6lk.vercel.app)** in your browser to view your live telemetry streams!
 
 ---
 
