@@ -35,6 +35,66 @@ Then open **[https://sentinel-i6lk.vercel.app](https://sentinel-i6lk.vercel.app)
 
 ---
 
+## 🔌 Attaching the Sentinel Agent to Your Own Service
+
+Anyone can instrument their existing Node.js / Express backend with Sentinel in under 2 minutes.
+
+### 1. Get Your Credentials
+1. Open the [Sentinel Web App](https://sentinel-i6lk.vercel.app) and sign in.
+2. Select or create your project on the **Projects** page.
+3. Copy your **API Key** from the project card, and copy your **Project ID** from the dashboard URL (`https://sentinel-i6lk.vercel.app/dashboard/<PROJECT_ID>`).
+
+### 2. Copy the Agent into Your Project
+Copy the lightweight `agent/` folder from this repository into your Node.js application directory (or install it via npm/git).
+
+### 3. Initialize in Your Express Application
+Add Sentinel to your service's entry point (e.g. `index.js` or `server.js`):
+
+```javascript
+const express = require('express');
+const sentinel = require('./agent'); // path to agent folder
+
+const app = express();
+
+// 1. Initialize the Sentinel Telemetry Agent
+sentinel.init({
+  serviceName: 'cart-service',                      // Your microservice name
+  apiKey: 'YOUR_PROJECT_API_KEY',                  // Copied from Sentinel project card
+  projectId: 'YOUR_PROJECT_ID',                    // Copied from /dashboard/<PROJECT_ID> URL
+  serverUrl: 'https://sentinel-rosy-three.vercel.app', // Or http://localhost:5000 if local
+});
+
+// 2. Attach the HTTP tracking middleware (tracks RPS, route latencies, and 4xx/5xx errors)
+app.use(sentinel.middleware());
+
+// 3. Your regular application routes
+app.get('/cart', (req, res) => {
+  res.json({ items: ['item_1', 'item_2'], total: 299 });
+});
+
+app.post('/checkout', (req, res) => {
+  res.json({ status: 'order_processed' });
+});
+
+// 4. (Optional) Custom business metric tracking & structured logs
+sentinel.track('checkout.revenue', 299);
+sentinel.log('info', 'Checkout processed successfully');
+
+app.listen(4000, () => {
+  console.log('Cart service listening on port 4000 with Sentinel telemetry active');
+});
+```
+
+### 4. What Happens Automatically
+Once initialized, the Sentinel Agent operates completely in the background:
+- **System Metrics (every 2s):** Automatically captures host CPU utilization %, RSS memory, V8 heap usage, and event loop latency without impacting your app.
+- **HTTP Analytics (every request):** Calculates throughput (RPS), error rates, and **P50 / P95 / P99** latency percentiles broken down per route.
+- **Instance Heartbeats (every 5s):** Emits heartbeat pings to mark your service green **`UP`** in the Sentinel fleet monitor.
+- **Error Capture:** Intercepts unhandled promise rejections and uncaught exceptions, grouping them by stack trace hash in the Sentinel error timeline.
+- **Zero Overhead:** Queues telemetry events in an in-memory ring-buffer and flushes in batches without blocking the Node.js event loop. If Sentinel is unreachable, it silently drops packets to ensure your host application never crashes.
+
+---
+
 ## 💡 The Problem & The Solution
 
 Enterprise observability platforms (Datadog, New Relic, Dynatrace) are notoriously complex, resource-heavy, and cost-prohibitive for startups, hackathons, and agile teams. Monitoring microservices or node processes shouldn't require complex agent daemon orchestrations or astronomical SaaS bills.
