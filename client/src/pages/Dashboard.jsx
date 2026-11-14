@@ -10,7 +10,7 @@ import AlertsPanel from '../components/AlertsPanel';
 import RouteTable from '../components/RouteTable';
 import ErrorGroups from '../components/ErrorGroups';
 import DebugFooter from '../components/DebugFooter';
-import { GradientText } from '../components/ui/visuals';
+import { AnimatedGradientText } from '../components/magicui';
 
 const API = 'http://localhost:5000';
 
@@ -183,7 +183,7 @@ export default function Dashboard() {
           <div className="h-4 w-px bg-zinc-800" />
           <h1 className="font-bold text-white text-base tracking-tight flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-            <GradientText className="tracking-tight">Sentinel Telemetry</GradientText>
+            <AnimatedGradientText className="tracking-tight">Sentinel Telemetry</AnimatedGradientText>
             <span className="text-zinc-600">•</span>
             <span className="font-mono text-zinc-300 text-xs px-2.5 py-0.5 rounded-full bg-[#121215] border border-zinc-800">{projectId}</span>
           </h1>

@@ -27,7 +27,7 @@ Enterprise observability platforms (Datadog, New Relic, Dynatrace) are notorious
 - **🔄 Isolated Service Subscriptions**: Independent per-tab/per-widget Socket.IO room subscriptions enabling targeted live feeds without redundant wire traffic.
 - **⏪ Historical Data with Seamless Live Merge**: Time-range selector (15m, 1h, 6h, 24h) backfilling historical aggregates, automatically merging real-time events without duplication via `eventId` dedup and `asOf` cursors.
 - **⏯️ Incident Replay Slider**: Scrub back in time through recorded production incidents to inspect correlated metrics and root-cause regressions step-by-step.
-- **🌓 Responsive Dark Mode UI**: Built with Tailwind CSS and Recharts, designed for observability war-rooms with smooth transitions and customizable data densities.
+- **🌓 Responsive Dark Mode UI**: Built with **Magic UI**, **Skipper UI**, Tailwind CSS, and Recharts, designed for observability war-rooms with smooth kinetic transitions, spotlight cards, animated border beams, particle crowds, and customizable data densities.
 
 ---
 
@@ -36,7 +36,9 @@ Enterprise observability platforms (Datadog, New Relic, Dynatrace) are notorious
 | Layer | Technology | Purpose |
 | :--- | :--- | :--- |
 | **Frontend Framework** | React 18 + Vite | Blazing fast client bundle with hot-module replacement |
-| **UI Styling** | Tailwind CSS | Utility-first, responsive dark/light theme dashboard styling |
+| **Component Libraries** | Magic UI + Skipper UI | High-end micro-interactions, kinetic typography, dynamic liquid simulation, spotlight cards |
+| **Animation Engine** | Framer Motion | Smooth physics-based spring animations, layout transitions, and spotlight tracking |
+| **UI Styling** | Tailwind CSS + CLSX + Tailwind-Merge | Utility-first, responsive dark luxury theme styling with dynamic class composition |
 | **Visualization** | Recharts | Composable declarative charting for latency percentiles and system metrics |
 | **Real-Time Transport** | Socket.IO | Bi-directional, namespace-isolated WebSocket communication with fallback |
 | **Backend API** | Node.js + Express | High-performance ingest pipeline and REST control plane |
@@ -146,20 +148,16 @@ mernify/
 ├── agent/            # Node.js auto-instrumentation SDK / client library
 ├── client/           # React 18 + Vite dashboard frontend
 │   ├── src/
-│   │   ├── components/ # Charts, metric cards, incident sliders, route tables
+│   │   ├── components/ 
+│   │   │   ├── magicui/  # Magic UI components (BorderBeam, MagicCard, ShinyButton, etc.)
+│   │   │   ├── skipper/  # Skipper UI components (CanvasCrowd, KineticTitle, LiquidSimulation)
+│   │   │   └── charts/   # Composable telemetry and latency charts
 │   │   ├── context/    # Socket.IO & telemetry state management
-│   │   └── hooks/      # Real-time subscriptions & RAF rendering buffers
+│   │   ├── hooks/      # Real-time subscriptions & RAF rendering buffers
+│   │   └── lib/        # Utility helpers (cn, tailwind-merge, clsx)
 │   └── package.json
 ├── docs/             # Technical architecture, benchmarks & demo scripts
-│   ├── ARCHITECTURE.md # Detailed system diagrams & protocol specifications
-│   ├── DEMO_SCRIPT.md  # 3-5 minute demo walkthrough guide
-│   └── screenshot.png  # UI screenshot asset
 ├── scripts/          # Mock servers, telemetry simulators, seeders & benchmarks
-│   ├── mock-server.js  # In-memory dual-namespace Socket.IO & REST mock server
-│   ├── simulator.js    # Multi-source load simulator with chaos testing
-│   ├── seed.js         # Historical telemetry backfill script
-│   ├── bench.js        # High-volume stress testing harness
-│   └── dummy-app/      # Instrumented Express microservices (Cart & Payments)
 ├── server/           # Production Express + MongoDB telemetry server
 └── README.md
 ```
@@ -168,6 +166,9 @@ mernify/
 
 ## 🤝 Attributions & Core Libraries
 
+- **[Magic UI](https://magicui.design/)**: Modern animated UI components (BorderBeam, MagicCard, ShinyButton, AnimatedGradientText, Particles, TextReveal).
+- **[Skipper UI](https://skiper-ui.com/)**: Dynamic canvas visualizations and kinetic letter interactions (CanvasCrowd, KineticTitle, LiquidSimulation).
+- **[Framer Motion](https://www.framer.com/motion/)**: Production-ready motion and animation library for React.
 - **[Socket.IO](https://socket.io/)**: Low-latency bi-directional event transport.
 - **[Recharts](https://recharts.org/)**: Composable SVG-based charting primitives.
 - **[Tailwind CSS](https://tailwindcss.com/)**: Utility styling system.

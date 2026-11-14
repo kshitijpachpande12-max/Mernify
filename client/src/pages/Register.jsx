@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import LiquidSimulation from '../components/LiquidSimulation';
-import CanvasCrowd from '../components/CanvasCrowd';
-import KineticTitle from '../components/KineticTitle';
+import { CanvasCrowd, KineticTitle, LiquidSimulation } from '../components/skipper';
 
 export default function Register() {
   const { register } = useAuth();

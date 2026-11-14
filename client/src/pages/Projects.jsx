@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { AuroraBackground, GradientText, MagicCard, ShinyButton } from '../components/ui/visuals';
-import CanvasCrowd from '../components/CanvasCrowd';
+import { MagicCard, ShinyButton, AnimatedGradientText } from '../components/magicui';
+import { CanvasCrowd } from '../components/skipper';
+import { AuroraBackground } from '../components/ui/visuals';
 
 const API = 'http://localhost:5000';
 
@@ -137,7 +138,7 @@ export default function Projects() {
             S
           </div>
           <div className="flex items-center gap-2">
-            <GradientText className="text-xl font-bold tracking-tight">Sentinel</GradientText>
+            <AnimatedGradientText className="text-xl font-bold tracking-tight">Sentinel</AnimatedGradientText>
             <span className="text-[10px] font-mono uppercase px-2.5 py-0.5 rounded-full bg-zinc-800/80 text-zinc-300 border border-zinc-700/80">
               Control Plane
             </span>

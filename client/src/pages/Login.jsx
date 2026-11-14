@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import LiquidSimulation from '../components/LiquidSimulation';
-import CanvasCrowd from '../components/CanvasCrowd';
-import KineticTitle from '../components/KineticTitle';
-import TextRevealBox from '../components/TextRevealBox';
+import { TextRevealCard } from '../components/magicui';
+import { CanvasCrowd, KineticTitle, LiquidSimulation } from '../components/skipper';
 
 export default function Login() {
   const { login } = useAuth();
@@ -62,8 +60,8 @@ export default function Login() {
             <KineticTitle subtitle="DISTRIBUTED CLOUD TELEMETRY & INCIDENT AI" />
           </div>
 
-          {/* Text Reveal Box */}
-          <TextRevealBox
+          {/* Text Reveal Box (Magic UI) */}
+          <TextRevealCard
             title="✦ THE MISSION-CRITICAL TELEMETRY STACK"
             text="Sentinel delivers sub-millisecond event streaming, automated statistical anomaly detection, and timeline scrubbing to pinpoint microservice latency spikes and catastrophic failures before they impact your users."
           />
