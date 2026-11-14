@@ -80,14 +80,14 @@ export default function AlertsPanel({ alerts = [], onClear }) {
   };
 
   return (
-    <div className="bg-[#121215] border border-zinc-800/90 rounded-2xl p-4 shadow-xl flex flex-col h-full backdrop-blur-xl">
+    <div className="bg-[#121316] border border-[#22242a] rounded-2xl p-4 shadow-xl flex flex-col h-full backdrop-blur-xl">
       {/* Header */}
       <div className="flex items-center justify-between mb-3.5">
         <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-          <h3 className="font-bold text-white text-sm tracking-tight">Active Alerts</h3>
+          <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
+          <h3 className="font-bold text-[#f8fafc] text-sm tracking-tight">Active Alerts</h3>
           {sortedAlerts.length > 0 && (
-            <span className="bg-zinc-800 text-zinc-300 border border-zinc-700 text-[11px] px-2 py-0.5 rounded-full font-mono font-medium">
+            <span className="bg-[#18191d] text-indigo-300 border border-[#22242a] text-[11px] px-2 py-0.5 rounded-full font-mono font-medium">
               {sortedAlerts.length}
             </span>
           )}
@@ -97,7 +97,7 @@ export default function AlertsPanel({ alerts = [], onClear }) {
           <button
             type="button"
             onClick={handleClear}
-            className="text-[11px] font-mono text-zinc-400 hover:text-white transition-colors px-2.5 py-1 rounded-md bg-[#18191d] hover:bg-zinc-800 border border-zinc-800 cursor-pointer"
+            className="text-[11px] font-mono text-[#94a3b8] hover:text-white transition-colors px-2.5 py-1 rounded-md bg-[#18191d] hover:bg-[#22242a] border border-[#22242a] cursor-pointer"
             title="Dismiss all active alerts"
           >
             Clear All
@@ -107,14 +107,14 @@ export default function AlertsPanel({ alerts = [], onClear }) {
 
       {/* Filter Tabs */}
       {sortedAlerts.length > 0 && (
-        <div className="flex items-center gap-1.5 p-1 mb-3 rounded-lg bg-[#090a0b] border border-zinc-800/80 text-xs">
+        <div className="flex items-center gap-1.5 p-1 mb-3 rounded-lg bg-[#0b0c0e] border border-[#22242a] text-xs">
           <button
             type="button"
             onClick={() => setFilter('all')}
             className={`flex-1 py-1 px-2 rounded-md font-medium transition-all cursor-pointer ${
               filter === 'all'
-                ? 'bg-zinc-800 text-white shadow-sm'
-                : 'text-zinc-400 hover:text-zinc-200'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-[#94a3b8] hover:text-white'
             }`}
           >
             All ({sortedAlerts.length})
@@ -124,8 +124,8 @@ export default function AlertsPanel({ alerts = [], onClear }) {
             onClick={() => setFilter('critical')}
             className={`flex-1 py-1 px-2 rounded-md font-medium transition-all cursor-pointer ${
               filter === 'critical'
-                ? 'bg-red-950/60 text-red-200 border border-red-800/50 shadow-sm'
-                : 'text-zinc-400 hover:text-red-300'
+                ? 'bg-rose-950/60 text-rose-200 border border-rose-800/50 shadow-sm'
+                : 'text-[#94a3b8] hover:text-rose-300'
             }`}
           >
             Critical ({criticalCount})
@@ -136,7 +136,7 @@ export default function AlertsPanel({ alerts = [], onClear }) {
             className={`flex-1 py-1 px-2 rounded-md font-medium transition-all cursor-pointer ${
               filter === 'warning'
                 ? 'bg-amber-950/60 text-amber-200 border border-amber-800/50 shadow-sm'
-                : 'text-zinc-400 hover:text-amber-300'
+                : 'text-[#94a3b8] hover:text-amber-300'
             }`}
           >
             Warnings ({warningCount})

@@ -26,8 +26,8 @@ export function GradientText({ children, className = '' }) {
 
 export function Panel({ children, className = '' }) {
   return (
-    <div className={`relative overflow-hidden rounded-2xl border border-zinc-800/90 bg-[#121215]/90 ${className}`}>
-      <BorderBeam size={80} duration={14} colorFrom="#ffffff" colorTo="#3f3f46" borderWidth={1} />
+    <div className={`relative overflow-hidden rounded-2xl border border-[#22242a] bg-[#121316]/90 ${className}`}>
+      <BorderBeam size={80} duration={14} colorFrom="#818cf8" colorTo="#22242a" borderWidth={1} />
       <div className="relative z-10">{children}</div>
     </div>
   );

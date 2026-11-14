@@ -11,6 +11,7 @@ import RouteTable from '../components/RouteTable';
 import ErrorGroups from '../components/ErrorGroups';
 import DebugFooter from '../components/DebugFooter';
 import { AnimatedGradientText } from '../components/magicui';
+import { KineticMenu } from '../components/skipper';
 
 const API = 'http://localhost:5000';
 
@@ -19,6 +20,7 @@ export default function Dashboard() {
   const { token, logout } = useAuth();
   const navigate = useNavigate();
 
+  const [showMenu, setShowMenu] = useState(false);
   const [services, setServices] = useState([]);
   const [selectedServices, setSelectedServices] = useState([]);
   const [activeTabService, setActiveTabService] = useState(null);
@@ -170,28 +172,28 @@ export default function Dashboard() {
   }, [activeTabService, telemetryData, isReplaying, replayTime]);
 
   return (
-    <div className="min-h-screen bg-[#090a0b] text-white flex flex-col pb-12 selection:bg-white/20 selection:text-white">
+    <div className="min-h-screen bg-[#0b0c0e] text-[#f8fafc] flex flex-col pb-12 selection:bg-indigo-500/25 selection:text-indigo-200">
       {/* Top Navbar */}
-      <header className="bg-[#0d0e11]/90 border-b border-zinc-800/80 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-40 backdrop-blur-xl">
+      <header className="bg-[#0e0f13]/90 border-b border-[#22242a] px-6 py-3.5 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-40 backdrop-blur-xl">
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate('/projects')}
-            className="text-zinc-400 hover:text-white transition-colors text-sm flex items-center gap-1.5 font-medium cursor-pointer"
+            className="text-[#94a3b8] hover:text-white transition-colors text-sm flex items-center gap-1.5 font-medium cursor-pointer"
           >
             ← Projects
           </button>
-          <div className="h-4 w-px bg-zinc-800" />
-          <h1 className="font-bold text-white text-base tracking-tight flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+          <div className="h-4 w-px bg-[#22242a]" />
+          <h1 className="font-bold text-[#f8fafc] text-base tracking-tight flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
             <AnimatedGradientText className="tracking-tight">Sentinel Telemetry</AnimatedGradientText>
-            <span className="text-zinc-600">•</span>
-            <span className="font-mono text-zinc-300 text-xs px-2.5 py-0.5 rounded-full bg-[#121215] border border-zinc-800">{projectId}</span>
+            <span className="text-[#64748b]">•</span>
+            <span className="font-mono text-indigo-300 text-xs px-2.5 py-0.5 rounded-full bg-[#121316] border border-[#22242a]">{projectId}</span>
           </h1>
         </div>
 
         {/* Time-Range Selector & Controls */}
         <div className="flex items-center gap-3">
-          <div className="inline-flex rounded-xl bg-[#121215] p-1 border border-zinc-800 text-xs font-mono">
+          <div className="inline-flex rounded-xl bg-[#121316] p-1 border border-[#22242a] text-xs font-mono">
             {['live', '15min', '1h', '6h'].map((t) => (
               <button
                 key={t}
@@ -201,8 +203,8 @@ export default function Dashboard() {
                 }}
                 className={`px-3 py-1 rounded-lg transition-all capitalize cursor-pointer ${
                   timeRange === t
-                    ? 'bg-white text-black font-bold shadow-sm'
-                    : 'text-zinc-400 hover:text-white'
+                    ? 'bg-indigo-600 text-white font-semibold shadow-sm'
+                    : 'text-[#94a3b8] hover:text-white'
                 }`}
               >
                 {t}
@@ -210,49 +212,61 @@ export default function Dashboard() {
             ))}
           </div>
 
-          <button
-            onClick={logout}
-            className="text-xs text-zinc-400 hover:text-white transition-colors ml-2 px-3 py-1.5 rounded-lg hover:bg-zinc-800/70 cursor-pointer"
-          >
-            Sign out
-          </button>
+          <div className="flex items-center gap-2 ml-2">
+            <button
+              type="button"
+              onClick={() => setShowMenu(true)}
+              className="flex items-center gap-1.5 text-xs font-mono text-[#94a3b8] hover:text-white bg-[#121316] hover:bg-[#18191d] border border-[#22242a] hover:border-indigo-500/50 px-3 py-1.5 rounded-lg transition-all cursor-pointer group"
+            >
+              <span className="w-3.5 h-3.5 rounded bg-[#202227] group-hover:bg-indigo-500/20 border border-[#2c2f38] flex items-center justify-center text-[9px] text-white">
+                ⤢
+              </span>
+              <span>Menu</span>
+            </button>
+            <button
+              onClick={logout}
+              className="text-xs text-[#94a3b8] hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-[#18191d] cursor-pointer"
+            >
+              Sign out
+            </button>
+          </div>
         </div>
       </header>
 
       {/* Replay Scrubbing Bar (Incident Replay) */}
-      <div className="bg-[#0d0e11]/95 border-b border-zinc-800/80 px-6 py-2.5 flex flex-wrap items-center gap-4 text-xs">
+      <div className="bg-[#0e0f13]/95 border-b border-[#22242a] px-6 py-2.5 flex flex-wrap items-center gap-4 text-xs">
         <label className="flex items-center gap-2 cursor-pointer select-none">
           <input
             type="checkbox"
             checked={isReplaying}
             onChange={(e) => setIsReplaying(e.target.checked)}
-            className="w-4 h-4 rounded bg-[#090a0b] border-zinc-700 text-amber-500 focus:ring-0"
+            className="w-4 h-4 rounded bg-[#0b0c0e] border-[#22242a] text-amber-500 focus:ring-0"
           />
-          <span className={isReplaying ? 'text-amber-400 font-bold' : 'text-zinc-400'}>
+          <span className={isReplaying ? 'text-amber-400 font-bold' : 'text-[#94a3b8]'}>
             Replay Incident Mode {isReplaying && '(Live Ingestion Paused)'}
           </span>
         </label>
 
         {isReplaying && (
           <div className="flex-1 flex items-center gap-3 min-w-[200px]">
-            <span className="text-zinc-500 font-mono">Scrub:</span>
+            <span className="text-[#64748b] font-mono">Scrub:</span>
             <input
               type="range"
               min="0"
               max="100"
               value={replaySliderValue}
               onChange={(e) => setReplaySliderValue(Number(e.target.value))}
-              className="flex-1 h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-amber-400"
+              className="flex-1 h-1.5 bg-[#18191d] rounded-lg appearance-none cursor-pointer accent-indigo-400"
             />
-            <span className="font-mono text-amber-300 text-xs">
+            <span className="font-mono text-indigo-300 text-xs">
               {replaySliderValue}% {replayTime ? `(${new Date(replayTime).toLocaleTimeString()})` : ''}
             </span>
           </div>
         )}
 
         {isLoadingHistory && (
-          <span className="text-zinc-300 flex items-center gap-1.5 animate-pulse ml-auto font-mono text-xs">
-            <svg className="animate-spin h-3.5 w-3.5 text-white" viewBox="0 0 24 24">
+          <span className="text-indigo-300 flex items-center gap-1.5 animate-pulse ml-auto font-mono text-xs">
+            <svg className="animate-spin h-3.5 w-3.5 text-indigo-400" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
@@ -264,11 +278,11 @@ export default function Dashboard() {
       {/* Main Body */}
       <div className="flex-1 flex flex-col md:flex-row">
         {/* Sidebar / Services List & Decluttered Alerts */}
-        <aside className="w-full md:w-72 bg-[#0d0e11]/60 border-r border-zinc-800/80 p-4 shrink-0 flex flex-col gap-4">
+        <aside className="w-full md:w-72 bg-[#0e0f13]/60 border-r border-[#22242a] p-4 shrink-0 flex flex-col gap-4">
           <div>
             <div className="flex items-center justify-between mb-2">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-400 font-mono">Microservices</h2>
-              <span className="text-[11px] text-zinc-500 font-mono">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-[#94a3b8] font-mono">Microservices</h2>
+              <span className="text-[11px] text-[#64748b] font-mono">
                 {selectedServices.length}/{services.length} selected
               </span>
             </div>
@@ -316,11 +330,11 @@ export default function Dashboard() {
                       className={`px-3.5 py-1.5 rounded-xl text-xs font-mono transition-all flex items-center gap-2 cursor-pointer ${
                         activeTabService === svc
                           ? isUp
-                            ? 'bg-[#18191d] text-white border border-zinc-600 font-bold shadow-md'
+                            ? 'bg-[#18191d] text-[#f8fafc] border border-indigo-500/60 font-bold shadow-md shadow-indigo-950/40'
                             : 'bg-rose-950/30 text-rose-200 border border-rose-500/60 font-bold shadow-md'
                           : isUp
-                          ? 'bg-[#121215] border border-zinc-800 text-zinc-400 hover:text-white'
-                          : 'bg-[#121215] border border-rose-950 text-zinc-400 hover:text-rose-200'
+                          ? 'bg-[#121316] border border-[#22242a] text-[#94a3b8] hover:text-white'
+                          : 'bg-[#121316] border border-rose-950 text-[#94a3b8] hover:text-rose-200'
                       }`}
                     >
                       <span
@@ -362,13 +376,13 @@ export default function Dashboard() {
                               SERVICE IS DOWN
                             </span>
                           </div>
-                          <p className="text-xs text-zinc-400 mt-1">
+                          <p className="text-xs text-[#94a3b8] mt-1">
                             Heartbeat silence detected (&gt;15s without telemetry). The service process is unreachable or terminated. Showing last recorded state.
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 self-end md:self-auto shrink-0 font-mono text-xs">
-                        <span className="text-zinc-500 text-[11px]">Heartbeat:</span>
+                        <span className="text-[#64748b] text-[11px]">Heartbeat:</span>
                         <span className="px-2.5 py-1 rounded-lg bg-rose-950/60 border border-rose-500/30 text-rose-300 font-bold">
                           SILENT / DOWN
                         </span>
@@ -385,83 +399,83 @@ export default function Dashboard() {
 
                     return (
                       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div className={`p-4 rounded-2xl bg-[#121215] border shadow-xl transition-all ${
-                          isActiveServiceDown ? 'border-rose-950/60' : 'border-zinc-800/90'
+                        <div className={`p-4 rounded-2xl bg-[#121316] border shadow-xl transition-all ${
+                          isActiveServiceDown ? 'border-rose-950/60' : 'border-[#22242a]'
                         }`}>
-                          <div className="flex items-center justify-between text-xs text-zinc-400 font-mono mb-1">
+                          <div className="flex items-center justify-between text-xs text-[#94a3b8] font-mono mb-1">
                             <span>CPU UTILIZATION</span>
                             <span className={`w-2 h-2 rounded-full ${
-                              isActiveServiceDown ? 'bg-rose-500' : 'bg-white animate-pulse'
+                              isActiveServiceDown ? 'bg-rose-500' : 'bg-indigo-400 animate-pulse'
                             }`} />
                           </div>
                           <div className={`text-2xl font-bold font-mono tracking-tight ${
-                            isActiveServiceDown ? 'text-zinc-400' : 'text-white'
+                            isActiveServiceDown ? 'text-[#64748b]' : 'text-[#f8fafc]'
                           }`}>
                             {m?.cpuPercent !== undefined ? `${m.cpuPercent.toFixed(1)}%` : (isActiveServiceDown ? '0.0%' : '—')}
                           </div>
                           <div className={`text-[10px] font-mono mt-1 ${
-                            isActiveServiceDown ? 'text-rose-400 font-medium' : 'text-zinc-400'
+                            isActiveServiceDown ? 'text-rose-400 font-medium' : 'text-indigo-400'
                           }`}>
                             {isActiveServiceDown ? 'Service down • Offline' : 'Core process footprint'}
                           </div>
                         </div>
 
-                        <div className={`p-4 rounded-2xl bg-[#121215] border shadow-xl transition-all ${
-                          isActiveServiceDown ? 'border-rose-950/60' : 'border-zinc-800/90'
+                        <div className={`p-4 rounded-2xl bg-[#121316] border shadow-xl transition-all ${
+                          isActiveServiceDown ? 'border-rose-950/60' : 'border-[#22242a]'
                         }`}>
-                          <div className="flex items-center justify-between text-xs text-zinc-400 font-mono mb-1">
+                          <div className="flex items-center justify-between text-xs text-[#94a3b8] font-mono mb-1">
                             <span>MEMORY (RSS)</span>
                             <span className={`w-2 h-2 rounded-full ${
-                              isActiveServiceDown ? 'bg-rose-500/60' : 'bg-zinc-400'
+                              isActiveServiceDown ? 'bg-rose-500/60' : 'bg-slate-400'
                             }`} />
                           </div>
                           <div className={`text-2xl font-bold font-mono tracking-tight ${
-                            isActiveServiceDown ? 'text-zinc-400' : 'text-white'
+                            isActiveServiceDown ? 'text-[#64748b]' : 'text-[#f8fafc]'
                           }`}>
                             {m?.memRssMB !== undefined ? `${Math.round(m.memRssMB)} MB` : '—'}
                           </div>
-                          <div className="text-[10px] text-zinc-400 font-mono mt-1">
+                          <div className="text-[10px] text-[#94a3b8] font-mono mt-1">
                             {isActiveServiceDown ? 'Last recorded footprint' : 'Resident process set'}
                           </div>
                         </div>
 
-                        <div className={`p-4 rounded-2xl bg-[#121215] border shadow-xl transition-all ${
-                          isActiveServiceDown ? 'border-rose-950/60' : 'border-zinc-800/90'
+                        <div className={`p-4 rounded-2xl bg-[#121316] border shadow-xl transition-all ${
+                          isActiveServiceDown ? 'border-rose-950/60' : 'border-[#22242a]'
                         }`}>
-                          <div className="flex items-center justify-between text-xs text-zinc-400 font-mono mb-1">
+                          <div className="flex items-center justify-between text-xs text-[#94a3b8] font-mono mb-1">
                             <span>P99 LATENCY</span>
                             <span className={`w-2 h-2 rounded-full ${
                               isActiveServiceDown ? 'bg-zinc-600' : 'bg-emerald-400'
                             }`} />
                           </div>
                           <div className={`text-2xl font-bold font-mono tracking-tight ${
-                            isActiveServiceDown ? 'text-zinc-500' : 'text-white'
+                            isActiveServiceDown ? 'text-[#64748b]' : 'text-emerald-400'
                           }`}>
                             {isActiveServiceDown ? '—' : (h?.latencyP99 !== undefined ? `${h.latencyP99.toFixed(1)} ms` : '—')}
                           </div>
-                          <div className="text-[10px] font-mono mt-1 text-zinc-500">
-                            {isActiveServiceDown ? 'Service unreachable' : 'Critical tail threshold'}
+                          <div className="text-[10px] font-mono mt-1 text-emerald-500">
+                            {isActiveServiceDown ? 'Service unreachable' : 'Sub-5ms SLA target'}
                           </div>
                         </div>
 
-                        <div className={`p-4 rounded-2xl bg-[#121215] border shadow-xl transition-all ${
-                          isActiveServiceDown ? 'border-rose-900/40 bg-rose-950/10' : 'border-zinc-800/90'
+                        <div className={`p-4 rounded-2xl bg-[#121316] border shadow-xl transition-all ${
+                          isActiveServiceDown ? 'border-rose-900/40 bg-rose-950/10' : 'border-[#22242a]'
                         }`}>
                           <div className="flex items-center justify-between text-xs font-mono mb-1">
-                            <span className={isActiveServiceDown ? 'text-rose-300' : 'text-zinc-400'}>
+                            <span className={isActiveServiceDown ? 'text-rose-300' : 'text-[#94a3b8]'}>
                               THROUGHPUT
                             </span>
                             <span className={`w-2 h-2 rounded-full ${
-                              isActiveServiceDown ? 'bg-rose-500' : 'bg-white'
+                              isActiveServiceDown ? 'bg-rose-500' : 'bg-indigo-400'
                             }`} />
                           </div>
                           <div className={`text-2xl font-bold font-mono tracking-tight ${
-                            isActiveServiceDown ? 'text-rose-400' : 'text-white'
+                            isActiveServiceDown ? 'text-rose-400' : 'text-[#f8fafc]'
                           }`}>
                             {isActiveServiceDown ? '0 req/s' : (h?.requests !== undefined ? `${h.requests} req/s` : '—')}
                           </div>
                           <div className={`text-[10px] font-mono mt-1 ${
-                            isActiveServiceDown ? 'text-rose-400 font-medium' : 'text-zinc-400'
+                            isActiveServiceDown ? 'text-rose-400 font-medium' : 'text-indigo-400'
                           }`}>
                             {isActiveServiceDown ? 'Stream stopped • Offline' : 'Active request stream'}
                           </div>
@@ -518,6 +532,22 @@ export default function Dashboard() {
         renderRate={renderRate}
         activeServices={selectedServices.length}
       />
+
+      {/* Kinetic Navigation Modal */}
+      {showMenu && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="relative w-full max-w-md">
+            <button
+              type="button"
+              onClick={() => setShowMenu(false)}
+              className="absolute -top-12 right-2 text-[#94a3b8] hover:text-white text-xs font-mono uppercase bg-[#141518] hover:bg-[#1f2024] px-3.5 py-1.5 rounded-xl border border-[#22242a] flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+            >
+              <span>✕</span> Close
+            </button>
+            <KineticMenu onClose={() => setShowMenu(false)} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

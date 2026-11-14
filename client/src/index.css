@@ -6,6 +6,7 @@
   inherits: false;
 }
 
+/* Linear Iris Border Beam */
 .border-beam {
   position: absolute;
   inset: 0;
@@ -14,9 +15,10 @@
   background: conic-gradient(
     from var(--beam-angle),
     transparent 0deg,
-    transparent 280deg,
-    rgba(255, 255, 255, 0.3) 320deg,
-    rgba(255, 255, 255, 0.9) 345deg,
+    transparent 270deg,
+    rgba(99, 102, 241, 0.25) 300deg,
+    rgba(129, 140, 248, 0.9) 335deg,
+    rgba(255, 255, 255, 0.95) 350deg,
     transparent 360deg
   );
   -webkit-mask:
@@ -42,13 +44,14 @@
   }
 }
 
+/* Linear Metallic Iris Text */
 .gradient-text {
-  background-image: linear-gradient(110deg, #ffffff 0%, #f4f4f5 35%, #a1a1aa 65%, #ffffff 100%);
+  background-image: linear-gradient(110deg, #ffffff 0%, #e0e7ff 35%, #818cf8 65%, #ffffff 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: text-shine 8s linear infinite;
+  animation: text-shine 7s linear infinite;
 }
 
 @keyframes text-shine {
@@ -57,14 +60,15 @@
   }
 }
 
+/* Magic Card Spotlight */
 .magic-card::before {
   content: "";
   position: absolute;
   inset: 0;
   background: radial-gradient(
-    460px circle at var(--mx, 50%) var(--my, 0%),
-    rgba(255, 255, 255, 0.08),
-    transparent 42%
+    480px circle at var(--mx, 50%) var(--my, 0%),
+    rgba(99, 102, 241, 0.08),
+    transparent 45%
   );
   opacity: 0;
   transition: opacity 0.35s ease;
@@ -76,27 +80,29 @@
   opacity: 1;
 }
 
+/* Ambient Deep Atmospheric Blobs */
 .aurora-blob {
   position: absolute;
-  width: 46rem;
-  height: 46rem;
+  width: 48rem;
+  height: 48rem;
   border-radius: 9999px;
-  filter: blur(100px);
-  opacity: 0.18;
+  filter: blur(120px);
+  opacity: 0.12;
+  pointer-events: none;
 }
 
 .aurora-blob-a {
   top: -14rem;
   left: -10rem;
-  background: #27272a;
-  animation: drift 20s ease-in-out infinite alternate;
+  background: #4338ca;
+  animation: drift 22s ease-in-out infinite alternate;
 }
 
 .aurora-blob-b {
   right: -12rem;
   bottom: -16rem;
-  background: #18181b;
-  animation: drift 26s ease-in-out infinite alternate-reverse;
+  background: #312e81;
+  animation: drift 28s ease-in-out infinite alternate-reverse;
 }
 
 @keyframes drift {
@@ -109,35 +115,39 @@
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 48px 48px;
-  mask-image: radial-gradient(ellipse at center, black 25%, transparent 75%);
+    linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
 }
 
+/* Linear-Grade Shiny Button */
 .shiny-btn {
   position: relative;
   isolation: isolate;
   overflow: hidden;
   color: #ffffff;
-  background: linear-gradient(180deg, #27272a, #18181b);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: linear-gradient(180deg, #4f46e5, #4338ca);
+  border: 1px solid rgba(165, 180, 252, 0.4);
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.06),
-    0 8px 24px -4px rgba(0, 0, 0, 0.6);
-  transition: all 0.2s ease;
+    0 0 0 1px rgba(99, 102, 241, 0.25),
+    0 8px 24px -4px rgba(79, 70, 229, 0.45);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .shiny-btn:hover {
-  background: linear-gradient(180deg, #3f3f46, #27272a);
-  border-color: rgba(255, 255, 255, 0.28);
+  background: linear-gradient(180deg, #6366f1, #4f46e5);
+  border-color: rgba(199, 210, 254, 0.7);
+  box-shadow:
+    0 0 0 1px rgba(99, 102, 241, 0.4),
+    0 12px 30px -4px rgba(99, 102, 241, 0.55);
 }
 
 .shiny-btn::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(110deg, transparent 25%, rgba(255, 255, 255, 0.2) 50%, transparent 75%);
+  background: linear-gradient(110deg, transparent 20%, rgba(255, 255, 255, 0.3) 50%, transparent 80%);
   transform: translateX(-130%);
   animation: btn-shine 3.5s ease-in-out infinite;
 }
@@ -150,10 +160,10 @@
 }
 
 .shiny-btn:disabled {
-  background: #18181b;
-  border-color: rgba(255, 255, 255, 0.05);
+  background: #18191d;
+  border-color: #22242a;
   box-shadow: none;
-  color: #71717a;
+  color: #64748b;
   cursor: not-allowed;
 }
 
@@ -165,16 +175,16 @@
   .bg-grid-pattern {
     background-size: 36px 36px;
     background-image: 
-      linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
   }
 
   .text-glow {
-    text-shadow: 0 0 24px rgba(255, 255, 255, 0.4);
+    text-shadow: 0 0 24px rgba(129, 140, 248, 0.45);
   }
 
   .box-glow {
-    box-shadow: 0 0 40px -10px rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 40px -10px rgba(99, 102, 241, 0.12);
   }
 }
 
@@ -201,34 +211,6 @@
   }
 }
 
-@keyframes floatSlow {
-  0%, 100% {
-    transform: translateY(0px) rotate(0deg);
-  }
-  50% {
-    transform: translateY(-6px) rotate(0.5deg);
-  }
-}
-
-@keyframes pulseGlow {
-  0%, 100% {
-    opacity: 0.3;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.7;
-    transform: scale(1.05);
-  }
-}
-
 .animate-curtain-sweep {
   animation: curtainSweep 1.6s cubic-bezier(0.77, 0, 0.175, 1) forwards;
-}
-
-.animate-float-slow {
-  animation: floatSlow 6s ease-in-out infinite;
-}
-
-.animate-pulse-glow {
-  animation: pulseGlow 4s ease-in-out infinite;
 }

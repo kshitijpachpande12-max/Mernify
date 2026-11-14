@@ -5,50 +5,50 @@ export default function RouteTable({ routes = {}, serviceName = '' }) {
   const routeEntries = Object.entries(routes || {});
 
   return (
-    <Panel className="p-5 shadow-2xl transition-all duration-300 hover:border-zinc-500/50 bg-[#121215] border-zinc-800/90">
+    <Panel className="p-5 shadow-2xl transition-all duration-300 hover:border-indigo-500/30 bg-[#121316] border-[#22242a]">
       <div className="flex items-center justify-between mb-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-            <h3 className="text-sm font-bold text-white tracking-tight">
-              Endpoint Breakdown — <span className="font-mono text-zinc-300">{serviceName}</span>
+            <span className="w-2 h-2 rounded-full bg-indigo-400" />
+            <h3 className="text-sm font-bold text-[#f8fafc] tracking-tight">
+              Endpoint Breakdown — <span className="font-mono text-indigo-400">{serviceName}</span>
             </h3>
           </div>
-          <p className="text-[11px] text-zinc-400 mt-0.5">Latency and error distribution per route</p>
+          <p className="text-[11px] text-[#94a3b8] mt-0.5">Latency and error distribution per route</p>
         </div>
-        <span className="text-xs font-mono text-zinc-300 bg-zinc-800/80 border border-zinc-700/80 px-2.5 py-0.5 rounded-full">
+        <span className="text-xs font-mono text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-0.5 rounded-full">
           {routeEntries.length} routes
         </span>
       </div>
 
       {routeEntries.length === 0 ? (
-        <div className="text-center py-8 text-zinc-500 text-xs font-mono">
+        <div className="text-center py-8 text-[#64748b] text-xs font-mono">
           No endpoint latency samples received
         </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs font-mono">
             <thead>
-              <tr className="border-b border-zinc-800 text-zinc-400">
-                <th className="pb-2.5 font-semibold text-zinc-200">Route</th>
-                <th className="pb-2.5 font-semibold text-right text-zinc-200">Volume</th>
-                <th className="pb-2.5 font-semibold text-right text-zinc-200">Errors</th>
-                <th className="pb-2.5 font-semibold text-right text-zinc-200">P95 Latency</th>
+              <tr className="border-b border-[#22242a] text-[#94a3b8]">
+                <th className="pb-2.5 font-semibold text-[#f8fafc]">Route</th>
+                <th className="pb-2.5 font-semibold text-right text-[#f8fafc]">Volume</th>
+                <th className="pb-2.5 font-semibold text-right text-[#f8fafc]">Errors</th>
+                <th className="pb-2.5 font-semibold text-right text-[#f8fafc]">P95 Latency</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/60 text-zinc-300">
+            <tbody className="divide-y divide-[#1e2026] text-[#94a3b8]">
               {routeEntries.map(([route, info]) => {
                 const hasErrors = (info?.errors ?? 0) > 0;
                 return (
-                  <tr key={route} className="hover:bg-zinc-800/30 transition-colors">
-                    <td className="py-2.5 pr-4 text-white font-medium truncate max-w-xs">{route}</td>
-                    <td className="py-2.5 text-right font-mono text-zinc-300">{info?.count ?? 0}</td>
+                  <tr key={route} className="hover:bg-[#18191d] transition-colors">
+                    <td className="py-2.5 pr-4 text-indigo-300 font-medium truncate max-w-xs">{route}</td>
+                    <td className="py-2.5 text-right font-mono text-[#f8fafc]">{info?.count ?? 0}</td>
                     <td className="py-2.5 text-right font-mono">
                       <span
                         className={`px-2 py-0.5 rounded ${
                           hasErrors
-                            ? 'bg-red-950/40 text-red-300 font-bold border border-red-500/30'
-                            : 'text-zinc-500'
+                            ? 'bg-rose-500/10 text-rose-400 font-bold border border-rose-500/25'
+                            : 'text-[#64748b]'
                         }`}
                       >
                         {info?.errors ?? 0}

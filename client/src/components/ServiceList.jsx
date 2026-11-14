@@ -32,10 +32,10 @@ export default function ServiceList({ services = [], selected = [], onToggle, st
               isChecked
                 ? isDown
                   ? 'bg-rose-950/20 border-rose-500/50 text-rose-200 shadow-[0_0_15px_rgba(244,63,94,0.1)]'
-                  : 'bg-[#18191d] border-zinc-500/80 text-white shadow-sm'
+                  : 'bg-[#18191d] border-indigo-500/60 text-[#f8fafc] shadow-[0_0_15px_rgba(99,102,241,0.12)]'
                 : isDown
-                ? 'bg-[#090a0b]/80 border-rose-950/40 text-zinc-400 hover:border-rose-900/60'
-                : 'bg-[#090a0b]/80 border-zinc-800 text-zinc-400 hover:border-zinc-700'
+                ? 'bg-[#0b0c0e] border-rose-950/40 text-[#94a3b8] hover:border-rose-900/60'
+                : 'bg-[#0b0c0e] border-[#22242a] text-[#94a3b8] hover:border-[#2e3038]'
             }`}
           >
             <div className="flex items-center gap-2.5 min-w-0">
@@ -43,9 +43,9 @@ export default function ServiceList({ services = [], selected = [], onToggle, st
                 type="checkbox"
                 checked={isChecked}
                 onChange={() => onToggle(name)}
-                className="w-4 h-4 rounded bg-[#090a0b] border-zinc-700 text-white focus:ring-0 focus:ring-offset-0"
+                className="w-4 h-4 rounded bg-[#0b0c0e] border-[#22242a] accent-indigo-500 focus:ring-0"
               />
-              <span className={`font-mono text-xs font-medium truncate ${isDown ? 'text-zinc-300' : ''}`}>
+              <span className={`font-mono text-xs font-medium truncate ${isDown ? 'text-[#94a3b8]' : 'text-[#f8fafc]'}`}>
                 {name}
               </span>
             </div>

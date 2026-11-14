@@ -1,7 +1,7 @@
 /**
  * CanvasCrowd — Skipper UI (https://skiper-ui.com)
  * Swarm node connectivity canvas simulation.
- * Interactive microservice node transmission with cursor reactivity.
+ * Linear Obsidian & Electric Iris styling.
  */
 import React, { useEffect, useRef } from "react";
 import { cn } from "../../lib/utils";
@@ -47,10 +47,10 @@ export function CanvasCrowd({ className, nodeCount = 55 }) {
 
     const nodes = [];
     const colors = [
-      { r: 255, g: 255, b: 255 },
-      { r: 228, g: 228, b: 231 },
-      { r: 212, g: 212, b: 216 },
-      { r: 161, g: 161, b: 170 },
+      { r: 248, g: 250, b: 252 }, // platinum
+      { r: 129, g: 140, b: 248 }, // electric iris
+      { r: 99, g: 102, b: 241 },  // indigo
+      { r: 148, g: 163, b: 184 }, // cool slate
     ];
 
     for (let i = 0; i < nodeCount; i++) {
@@ -95,7 +95,7 @@ export function CanvasCrowd({ className, nodeCount = 55 }) {
         ctx.beginPath();
         ctx.arc(n.x, n.y, currentR, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(${n.color.r}, ${n.color.g}, ${n.color.b}, ${0.5 + pulse * 0.4})`;
-        ctx.shadowColor = "rgba(255, 255, 255, 0.4)";
+        ctx.shadowColor = "rgba(129, 140, 248, 0.45)";
         ctx.shadowBlur = 8;
         ctx.fill();
         ctx.shadowBlur = 0;

@@ -1,7 +1,7 @@
 /**
  * AnimatedGradientText — Magic UI (https://magicui.design/docs/components/animated-gradient-text)
  * High performance animated gradient text headline component.
- * Adapted from official Magic UI source (MIT License).
+ * Linear Obsidian & Electric Iris styling.
  */
 import React from "react";
 import { cn } from "../../lib/utils";
@@ -11,7 +11,7 @@ export function AnimatedGradientText({
   className,
   speed = 1,
   colorFrom = "#ffffff",
-  colorTo = "#a1a1aa",
+  colorTo = "#818cf8",
   ...props
 }) {
   return (
@@ -22,7 +22,7 @@ export function AnimatedGradientText({
         "--color-to": colorTo,
       }}
       className={cn(
-        "inline-block bg-gradient-to-r from-white via-zinc-400 to-white bg-[length:200%_auto] bg-clip-text text-transparent animate-[text-shine_6s_linear_infinite]",
+        "inline-block bg-gradient-to-r from-white via-indigo-200 to-indigo-400 bg-[length:200%_auto] bg-clip-text text-transparent animate-[text-shine_7s_linear_infinite]",
         className
       )}
       {...props}

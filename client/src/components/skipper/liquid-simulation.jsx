@@ -1,6 +1,7 @@
 /**
  * LiquidSimulation — Skipper UI / Vercel-style interactive fluid canvas.
  * Fluid dynamics and viscous mouse interaction simulation.
+ * Linear Obsidian & Electric Iris styling.
  */
 import React, { useEffect, useRef } from "react";
 import { cn } from "../../lib/utils";
@@ -47,10 +48,10 @@ export function LiquidSimulation({ className }) {
     window.addEventListener("mousemove", handleMouseMove);
 
     const blobs = [
-      { x: width * 0.25, y: height * 0.3, vx: 0.5, vy: 0.35, r: 340, color: "rgba(255, 255, 255, 0.08)" },
-      { x: width * 0.75, y: height * 0.4, vx: -0.4, vy: 0.5, r: 390, color: "rgba(228, 228, 231, 0.07)" },
-      { x: width * 0.45, y: height * 0.7, vx: 0.35, vy: -0.4, r: 360, color: "rgba(212, 212, 216, 0.06)" },
-      { x: width * 0.6, y: height * 0.2, vx: -0.3, vy: 0.25, r: 300, color: "rgba(161, 161, 170, 0.05)" },
+      { x: width * 0.25, y: height * 0.3, vx: 0.5, vy: 0.35, r: 350, color: "rgba(99, 102, 241, 0.12)" }, // Electric Iris
+      { x: width * 0.75, y: height * 0.4, vx: -0.4, vy: 0.5, r: 400, color: "rgba(129, 140, 248, 0.09)" }, // Lavender Iris
+      { x: width * 0.45, y: height * 0.7, vx: 0.35, vy: -0.4, r: 370, color: "rgba(248, 250, 252, 0.05)" }, // Platinum
+      { x: width * 0.6, y: height * 0.2, vx: -0.3, vy: 0.25, r: 320, color: "rgba(67, 56, 202, 0.08)" },  // Deep Indigo
     ];
 
     let t = 0;
@@ -87,7 +88,7 @@ export function LiquidSimulation({ className }) {
         const grad = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, Math.max(currentR, 50));
         grad.addColorStop(0, b.color);
         grad.addColorStop(0.5, b.color.replace(/[\d\.]+\)$/, "0.03)"));
-        grad.addColorStop(1, "rgba(9, 10, 11, 0)");
+        grad.addColorStop(1, "rgba(11, 12, 14, 0)");
 
         ctx.fillStyle = grad;
         ctx.beginPath();

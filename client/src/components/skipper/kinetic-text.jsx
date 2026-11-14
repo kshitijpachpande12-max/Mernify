@@ -1,6 +1,7 @@
 /**
  * KineticText / KineticTitle — Skipper UI (https://skiper-ui.com)
  * Kinetic typography with interactive letter physics, spring oscillation, and 3D tilt.
+ * Linear Obsidian & Electric Iris styling.
  */
 import React, { useState } from "react";
 import { cn } from "../../lib/utils";
@@ -36,8 +37,8 @@ export function KineticTitle({
       )}
       style={{ perspective: "1000px" }}
     >
-      {/* Background ambient luxury glow */}
-      <div className="absolute -inset-4 bg-gradient-to-r from-white/10 via-zinc-400/10 to-white/5 rounded-3xl blur-2xl opacity-40 group-hover:opacity-80 transition-opacity duration-700 pointer-events-none" />
+      {/* Background ambient iris glow */}
+      <div className="absolute -inset-4 bg-gradient-to-r from-indigo-500/15 via-indigo-400/20 to-purple-500/15 rounded-3xl blur-2xl opacity-50 group-hover:opacity-90 transition-opacity duration-700 pointer-events-none" />
 
       {/* Kinetic Letters Row */}
       <div
@@ -58,11 +59,11 @@ export function KineticTitle({
                   ? "translateY(-12px) scale(1.15) rotate(-3deg)"
                   : `translateY(${Math.sin((idx / letters.length) * Math.PI) * -3}px)`,
                 textShadow: isHovered
-                  ? "0 0 30px rgba(255,255,255,0.7), 0 0 50px rgba(228,228,231,0.5)"
-                  : "0 0 15px rgba(255,255,255,0.15)",
+                  ? "0 0 35px rgba(99,102,241,0.8), 0 0 60px rgba(129,140,248,0.5)"
+                  : "0 0 18px rgba(99,102,241,0.25)",
               }}
             >
-              <span className="bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent group-hover:from-white group-hover:via-zinc-200 group-hover:to-white transition-all duration-500">
+              <span className="bg-gradient-to-b from-white via-indigo-100 to-indigo-300 bg-clip-text text-transparent group-hover:from-white group-hover:via-indigo-200 group-hover:to-indigo-400 transition-all duration-500">
                 {char}
               </span>
             </span>
@@ -72,9 +73,9 @@ export function KineticTitle({
 
       {/* Subtitle Badge */}
       {subtitle && (
-        <div className="mt-3 flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#141518]/90 border border-zinc-700/60 backdrop-blur-md shadow-sm">
-          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-          <span className="text-[11px] sm:text-xs font-mono tracking-widest text-zinc-300 uppercase font-semibold">
+        <div className="mt-3 flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#121316]/90 border border-[#22242a] backdrop-blur-md shadow-sm">
+          <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+          <span className="text-[11px] sm:text-xs font-mono tracking-widest text-indigo-300 uppercase font-semibold">
             {subtitle}
           </span>
         </div>
