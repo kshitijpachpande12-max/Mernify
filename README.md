@@ -70,7 +70,7 @@ Enterprise observability platforms (Datadog, New Relic, Dynatrace) are notorious
 
 ## 📊 Data Generation & Chaos Resilience
 
-MERNIFY includes a comprehensive synthetic telemetry harness out-of-the-box:
+Sentinel includes a comprehensive synthetic telemetry harness out-of-the-box:
 
 - **`simulator.js`**: Generates real-time synthetic traffic across $N$ independent service instances. Features realistic sine-wave diurnal drift, baseline jitter, and configurable anomaly/spike injection (~1% chance).
 - **`seed.js`**: Backfills up to 6 hours of historical telemetry chunks via the ingestion API across multiple services, including a realistic pre-configured incident window (-2h to -1h45m) with 90%+ CPU spikes and 5x error cascades.
